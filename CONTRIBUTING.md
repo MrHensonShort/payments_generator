@@ -12,10 +12,10 @@ attribute.
 data-testid="{component}-{element}"
 ```
 
-| Token | Description | Example values |
-|---|---|---|
-| `component` | Kebab-case name of the React component | `config-panel`, `transaction-table`, `recurring-generator` |
-| `element` | Kebab-case role or purpose of the element | `submit-btn`, `date-input`, `error-message`, `row`, `header` |
+| Token       | Description                               | Example values                                               |
+| ----------- | ----------------------------------------- | ------------------------------------------------------------ |
+| `component` | Kebab-case name of the React component    | `config-panel`, `transaction-table`, `recurring-generator`   |
+| `element`   | Kebab-case role or purpose of the element | `submit-btn`, `date-input`, `error-message`, `row`, `header` |
 
 ### Examples
 
@@ -54,12 +54,136 @@ data-testid="{component}-{element}"
 
 Tests that must be verified for Safari compatibility are tagged with `@safari` in
 their test name. The Playwright `webkit` project runs all tests; the `@safari` tag
-marks tests that are *Phase 3 required* (see [playwright.config.ts](./playwright.config.ts)).
+marks tests that are _Phase 3 required_ (see [playwright.config.ts](./playwright.config.ts)).
 
 Example:
+
 ```ts
 test('@safari worker initialisation completes', async ({ page }) => { ... });
 ```
+
+---
+
+## Web Worker Test Strategy (TR-04)
+
+The payments-generator uses a Comlink-based Web Worker (`src/workers/generationWorker.ts`,
+implemented in Phase 3) for long-running transaction generation. Testing this worker
+requires two separate strategies depending on what is being tested.
+
+### 1 · Unit Tests — Comlink Mock (fast, Node environment)
+
+For any component or service that _talks to_ the worker (e.g. `GenerationOrchestrator`,
+`WorkerProxy`), use the in-process Comlink mock instead of a real Worker. The mock lives
+at `__mocks__/generationWorker.ts` (project root).
+
+**Importing the mock in a test file:**
+
+```ts
+import {
+  mockGenerationWorkerAPI, // shared spy instance
+  createFreshWorkerMock, // isolated spy per test
+  createQuotaExceededMock, // simulates IDB quota exhaustion
+  type GenerationWorkerAPI,
+  type GenerationConfig,
+  type GenerationProgressEvent,
+} from '__mocks__/generationWorker';
+```
+
+**Canonical pattern — isolated spy per test:**
+
+```ts
+import { createFreshWorkerMock, type GenerationWorkerAPI } from '__mocks__/generationWorker';
+
+let worker: GenerationWorkerAPI;
+
+beforeEach(() => {
+  worker = createFreshWorkerMock();
+});
+
+it('calls generate with the correct rule IDs', async () => {
+  const onProgress = vi.fn();
+  await worker.generate(['rule-1', 'rule-2'], config, onProgress);
+
+  expect(worker.generate).toHaveBeenCalledOnce();
+  expect(onProgress).toHaveBeenCalledTimes(2);
+});
+```
+
+**Testing abort behaviour:**
+
+```ts
+it('surfaces AbortError when signal is cancelled', async () => {
+  const controller = new AbortController();
+  controller.abort();
+  const worker = createFreshWorkerMock();
+
+  await expect(worker.generate(['r1'], config, () => {}, controller.signal)).rejects.toMatchObject({
+    name: 'AbortError',
+  });
+});
+```
+
+**Testing QuotaExceededError propagation:**
+
+```ts
+it('propagates QuotaExceededError from IDB', async () => {
+  const worker = createQuotaExceededMock(0); // throws on first rule
+
+  await expect(worker.generate(['r1', 'r2'], config, () => {})).rejects.toMatchObject({
+    name: 'QuotaExceededError',
+  });
+});
+```
+
+The full demo suite lives in
+`src/workers/__tests__/generationWorker-mock.test.ts` and runs with the
+standard `npm test` command.
+
+### 2 · Browser Integration Tests — Vitest Browser Mode (real Worker API)
+
+For tests that need the actual `Worker` constructor, real Comlink message
+passing, or cross-origin isolation features, use the browser-mode config.
+
+**Configuration:** `vitest.browser.config.ts`  
+**Test location:** `tests/workers/**/*.browser.test.ts`  
+**Provider:** Playwright (reuses the existing Playwright installation)
+
+**Install prerequisites (once):**
+
+```bash
+npm install -D @vitest/browser
+# Playwright browsers are already installed via @playwright/test
+```
+
+**Running browser tests:**
+
+```bash
+# Chromium (primary)
+npx vitest run --config vitest.browser.config.ts
+
+# WebKit / Safari (TR-07 - @safari tag)
+npx vitest run --config vitest.browser.config.ts --project=webkit
+```
+
+**Phase rollout for browser tests:**
+
+| Phase           | Tests enabled                                                        |
+| --------------- | -------------------------------------------------------------------- |
+| Phase 0 (now)   | `Worker` constructor availability check only                         |
+| Phase 3 (P3-04) | Real worker init, Comlink message passing, abort, QuotaExceededError |
+
+Scaffold tests with `test.skip` are in
+`tests/workers/generationWorker.browser.test.ts` — remove the `skip` when
+Phase 3 delivers the real worker.
+
+### Decision record
+
+| #   | Decision                                             | Rationale                                                                                                              |
+| --- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 1   | Mock lives at `__mocks__/generationWorker.ts` (root) | Vitest resolves root `__mocks__` for manual mocks; placing it here makes the import path predictable across all layers |
+| 2   | Mock methods are `vi.fn()` wrappers                  | Allows call-count assertions in consumer tests without extra setup                                                     |
+| 3   | Browser tests use Playwright provider                | Reuses existing `@playwright/test` install; no extra browser downloads                                                 |
+| 4   | Chromium + WebKit both run in CI                     | Ensures Safari compatibility is caught before Phase-3 completion                                                       |
 
 ---
 
@@ -150,11 +274,11 @@ is intentional. Unexpected diffs indicate a regression.
 
 ### Baseline browser policy
 
-| Browser | Role |
-|---|---|
-| **Chromium** | Canonical baseline — committed to the repo, used in CI |
-| Firefox | Cross-browser ad-hoc check — snapshots not committed by default |
-| WebKit | Cross-browser ad-hoc check (@safari coverage, TR-07) |
+| Browser      | Role                                                            |
+| ------------ | --------------------------------------------------------------- |
+| **Chromium** | Canonical baseline — committed to the repo, used in CI          |
+| Firefox      | Cross-browser ad-hoc check — snapshots not committed by default |
+| WebKit       | Cross-browser ad-hoc check (@safari coverage, TR-07)            |
 
 Chromium renders fonts most consistently across Linux/macOS/Windows CI. Firefox
 and WebKit produce expected (non-regression) diffs against the Chromium baseline due
@@ -162,13 +286,13 @@ to font hinting differences.
 
 ### Phase rollout
 
-| Phase | Views with active baseline tests |
-|---|---|
+| Phase         | Views with active baseline tests                                    |
+| ------------- | ------------------------------------------------------------------- |
 | Phase 0 (now) | Transactions view (design mockup) + sidebar, topbar, kpi-row, table |
-| Phase 4a | Settings, Recurring generator — enable skipped tests |
-| Phase 4b | Episode generator, Scatter generator — enable skipped tests |
-| Phase 5 | Export & Backup — enable skipped test |
-| QA-Gate | Full regression suite across all views (QA-04) |
+| Phase 4a      | Settings, Recurring generator — enable skipped tests                |
+| Phase 4b      | Episode generator, Scatter generator — enable skipped tests         |
+| Phase 5       | Export & Backup — enable skipped test                               |
+| QA-Gate       | Full regression suite across all views (QA-04)                      |
 
 ---
 
