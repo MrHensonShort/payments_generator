@@ -14,11 +14,13 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
-    }
+    },
+    "types": ["vitest/globals", "node"]
   },
-  "include": ["src", "tests"],
+  "include": ["src", "tests", "__mocks__", "vite.config.ts", "vitest.setup.ts"],
   "exclude": ["node_modules"]
 }
