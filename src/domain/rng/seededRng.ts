@@ -121,3 +121,30 @@ export function shuffle<T>(rng: RngFn, array: T[]): T[] {
 export function pick<T>(rng: RngFn, array: readonly T[]): T {
   return array[Math.floor(rng() * array.length)]!;
 }
+
+/**
+ * Generate a UUID v4 string using the supplied RNG.
+ *
+ * When `rng` is a seeded function, the result is deterministic – identical
+ * calls with the same RNG state produce the same UUID.  This satisfies the
+ * E-03 determinism requirement for transaction IDs.
+ *
+ * Format: `xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx` (RFC 4122 §4.4)
+ *
+ * @param rng - The RNG function to use (seeded or Math.random).
+ */
+export function seededUUID(rng: RngFn): string {
+  const bytes = Array.from({ length: 16 }, () => Math.floor(rng() * 256));
+  // Set version to 4 (bits 4-7 of byte 6).
+  bytes[6] = (bytes[6]! & 0x0f) | 0x40;
+  // Set variant to 10xx (bits 6-7 of byte 8).
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+  const hex = bytes.map((b) => b!.toString(16).padStart(2, '0'));
+  return [
+    hex.slice(0, 4).join(''),
+    hex.slice(4, 6).join(''),
+    hex.slice(6, 8).join(''),
+    hex.slice(8, 10).join(''),
+    hex.slice(10).join(''),
+  ].join('-');
+}
