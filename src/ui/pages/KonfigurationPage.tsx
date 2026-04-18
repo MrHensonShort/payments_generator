@@ -1,10 +1,7 @@
+import { ConfigPanel } from '@/ui/panels/ConfigPanel';
+
 function KonfigurationPage() {
-  return (
-    <div className="p-6">
-      <h2 className="text-xl font-semibold text-foreground">Konfiguration</h2>
-      <p className="mt-2 text-muted-foreground">In Entwicklung…</p>
-    </div>
-  );
+  return <ConfigPanel />;
 }
 
 export default KonfigurationPage;
