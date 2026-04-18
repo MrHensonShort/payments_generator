@@ -50,7 +50,7 @@ const DEFAULT_FORM: FormState = {
   name: '',
   counterparty: '',
   purpose: '',
-  category: 'Gehalt/Lohn' as Category,
+  category: 'Gehalt' as Category,
   transactionType: 'expense',
   amount: { mode: 'fix', amount: 0 },
   cycle: 'monthly',

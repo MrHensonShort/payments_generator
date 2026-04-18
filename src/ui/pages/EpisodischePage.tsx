@@ -60,7 +60,7 @@ const DEFAULT_FORM: FormState = {
   name: '',
   counterparties: '',
   purpose: '',
-  categories: ['Arzt/Gesundheit' as Category],
+  categories: ['Arzt' as Category],
   transactionType: 'expense',
   amount: { mode: 'fix', amount: 0 },
   frequencyMode: 'regular',
