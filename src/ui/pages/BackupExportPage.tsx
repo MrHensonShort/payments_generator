@@ -8,7 +8,12 @@ import {
   X,
   FileJson,
   FileText,
+  RefreshCw,
+  Cloud,
 } from 'lucide-react';
+import { batchUploadTransactions } from '@/infrastructure/api/transactionsApi';
+import type { ApiTransaction } from '@/infrastructure/api/types';
+import { ApiError } from '@/infrastructure/api/types';
 import { Button } from '@/ui/components/button';
 import { Label } from '@/ui/components/label';
 import {
@@ -292,6 +297,61 @@ function BackupExportPage() {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     toastTimerRef.current = setTimeout(() => setToast(null), 5000);
   }, []);
+
+  // Server sync (P6-05 / CLA-74)
+  const [syncing, setSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<{ sent: number; total: number } | null>(null);
+  const [syncResult, setSyncResult] = useState<{ imported: number; skipped: number } | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  const handleServerSync = useCallback(async () => {
+    setSyncing(true);
+    setSyncProgress(null);
+    setSyncResult(null);
+    setSyncError(null);
+
+    try {
+      const txs = await txRepo.getAll();
+      if (txs.length === 0) {
+        showToast('Keine Transaktionen vorhanden – nichts zu synchronisieren.');
+        return;
+      }
+
+      const apiTxs: ApiTransaction[] = txs.map((tx) => ({
+        id: tx.id,
+        date: tx.date,
+        time: tx.time,
+        amount: tx.amount,
+        purpose: tx.purpose,
+        counterparty: tx.counterparty,
+        category: tx.category,
+        source: tx.source as ApiTransaction['source'],
+        ruleId: tx.ruleId ?? null,
+      }));
+
+      const result = await batchUploadTransactions(apiTxs, (sent, total) => {
+        setSyncProgress({ sent, total });
+      });
+
+      setSyncResult(result);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.isOffline) {
+          setSyncError('Server nicht erreichbar. Bitte prüfen Sie die Verbindung und Server-URL.');
+        } else if (err.isUnauthorized) {
+          setSyncError(
+            'Authentifizierungsfehler. Bitte API-Schlüssel in der Konfiguration prüfen.',
+          );
+        } else {
+          setSyncError('Serverfehler (' + String(err.status) + '): ' + err.message);
+        }
+      } else {
+        setSyncError('Unbekannter Fehler: ' + (err instanceof Error ? err.message : String(err)));
+      }
+    } finally {
+      setSyncing(false);
+    }
+  }, [showToast]);
 
   // ── CSV Export ─────────────────────────────────────────────────────────────
 
@@ -639,6 +699,87 @@ function BackupExportPage() {
 
             {/* Fehlerliste (CLA-66 / P5-04): data-testid="import-error-list" */}
             <ImportErrorList errors={importErrors} />
+          </div>
+        </section>
+
+        {/* ── Server-Synchronisation (P6-05) ── */}
+        <section className="space-y-4" data-testid="server-sync-section">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Server-Synchronisation
+          </h3>
+          <div className="rounded-lg border border-border bg-card p-4 space-y-4">
+            <div className="flex items-start gap-3">
+              <Cloud className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+              <div className="space-y-1 flex-1">
+                <p className="text-sm text-foreground font-medium">Mit Server synchronisieren</p>
+                <p className="text-xs text-muted-foreground">
+                  Alle lokalen Transaktionen werden in Blöcken von 10 000 an den Backend-Server
+                  hochgeladen. Server-URL und API-Schlüssel können in der Konfiguration gesetzt
+                  werden.
+                </p>
+              </div>
+            </div>
+
+            {/* Progress indicator */}
+            {syncProgress && (
+              <div className="space-y-1.5" data-testid="sync-progress">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>
+                    {syncProgress.sent.toLocaleString('de-DE')} /{' '}
+                    {syncProgress.total.toLocaleString('de-DE')} Transaktionen übertragen
+                  </span>
+                  <span>{Math.round((syncProgress.sent / syncProgress.total) * 100)} %</span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-300"
+                    style={{
+                      width: `${Math.round((syncProgress.sent / syncProgress.total) * 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Success */}
+            {syncResult && !syncing && (
+              <div
+                data-testid="sync-success"
+                role="status"
+                className="flex items-center gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2"
+              >
+                <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />
+                <p className="text-sm text-emerald-500">
+                  Synchronisierung abgeschlossen: {syncResult.imported.toLocaleString('de-DE')}{' '}
+                  Transaktionen importiert
+                  {syncResult.skipped > 0 &&
+                    `, ${syncResult.skipped.toLocaleString('de-DE')} übersprungen`}
+                  .
+                </p>
+              </div>
+            )}
+
+            {/* Error */}
+            {syncError && (
+              <div
+                data-testid="sync-error"
+                role="alert"
+                className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2"
+              >
+                <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                <p className="text-sm text-destructive">{syncError}</p>
+              </div>
+            )}
+
+            <Button
+              onClick={handleServerSync}
+              disabled={syncing}
+              data-testid="server-sync-btn"
+              className="gap-2"
+            >
+              <RefreshCw className={cn('h-4 w-4', syncing && 'animate-spin')} />
+              {syncing ? 'Synchronisiere…' : 'Mit Server synchronisieren'}
+            </Button>
           </div>
         </section>
 

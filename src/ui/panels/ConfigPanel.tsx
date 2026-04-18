@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { format, parseISO, isValid, isBefore } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { CalendarIcon, RefreshCw } from 'lucide-react';
+import { CalendarIcon, RefreshCw, Server } from 'lucide-react';
+import {
+  getApiKey,
+  getApiUrl,
+  setApiKey as storeApiKey,
+  setApiUrl as storeApiUrl,
+  DEFAULT_API_URL,
+} from '@/infrastructure/api/apiKeyStorage';
 import { useAppConfigStore, selectConfig } from '@/ui/stores/appConfig';
 import { Button } from '@/ui/components/button';
 import { Input } from '@/ui/components/input';
@@ -161,6 +168,20 @@ export function ConfigPanel() {
 
   const isValidConfig = !dateError && !timeError;
 
+  // API settings – stored in localStorage, NOT in React state (P6-05 requirement)
+  const [apiUrl, setApiUrlLocal] = useState(() => getApiUrl());
+  const [apiKey, setApiKeyLocal] = useState(() => getApiKey());
+
+  const handleApiUrlChange = (url: string) => {
+    setApiUrlLocal(url);
+    storeApiUrl(url);
+  };
+
+  const handleApiKeyChange = (key: string) => {
+    setApiKeyLocal(key);
+    storeApiKey(key);
+  };
+
   return (
     <div className="h-full overflow-y-auto" data-testid="config-panel">
       <div className="max-w-2xl mx-auto p-6 space-y-8">
@@ -316,6 +337,48 @@ export function ConfigPanel() {
             <p className="text-xs text-muted-foreground">
               Mit Seed wird eine deterministische, reproduzierbare Ausgabe erzeugt.
             </p>
+          </div>
+        </section>
+
+        {/* API-Verbindung – P6-05 */}
+        <section className="space-y-4" data-testid="api-settings-section">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <Server className="h-3.5 w-3.5" />
+            API-Verbindung (P6-05)
+          </h3>
+          <div className="rounded-lg border border-border bg-card p-4 space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Server-URL und API-Schlüssel werden lokal gespeichert und nie an den State übergeben.
+              Leer lassen wenn kein Backend verwendet wird.
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="api-url">Server-URL</Label>
+              <Input
+                id="api-url"
+                type="url"
+                placeholder={DEFAULT_API_URL}
+                value={apiUrl}
+                onChange={(e) => handleApiUrlChange(e.target.value)}
+                data-testid="config-api-url"
+                className="font-mono text-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="api-key">API-Schlüssel</Label>
+              <Input
+                id="api-key"
+                type="password"
+                placeholder="Bearer-Token (64-stellig)"
+                value={apiKey}
+                onChange={(e) => handleApiKeyChange(e.target.value)}
+                data-testid="config-api-key"
+                className="font-mono text-sm"
+                autoComplete="off"
+              />
+              <p className="text-xs text-muted-foreground">
+                Wird im localStorage gespeichert. Nicht im Zustand oder in Backups enthalten.
+              </p>
+            </div>
           </div>
         </section>
 
