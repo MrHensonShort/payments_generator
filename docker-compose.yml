@@ -1,0 +1,54 @@
+version: '3.9'
+
+services:
+  # ── PostgreSQL 16 ────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: payments_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-payments}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-payments_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-payments_db}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-payments}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── Fastify Backend ──────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: payments_backend
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-payments}:${POSTGRES_PASSWORD:-payments_secret}@postgres:5432/${POSTGRES_DB:-payments_db}
+      PORT: 3001
+      HOST: 0.0.0.0
+    ports:
+      - '3001:3001'
+    volumes:
+      # Mount source for hot-reload (node_modules excluded via .dockerignore anonymous volume)
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "
+        npx prisma migrate deploy &&
+        npm run dev
+      "
+
+volumes:
+  postgres_data:
