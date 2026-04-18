@@ -5,6 +5,7 @@
  * Triggers a re-fetch after each mutation so the UI stays in sync.
  */
 import { useState, useEffect, useCallback } from 'react';
+import { liveQuery } from 'dexie';
 import { db } from '@/infrastructure/database';
 import { RuleRepo } from '@/infrastructure/ruleRepo';
 import type { RuleEntry } from '@/infrastructure/database';
@@ -83,11 +84,11 @@ export function useAllRuleCount(): number {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    const load = () => repo.getAll().then((all) => setCount(all.length));
-    load();
-    // Polling every 2 s as a simple live-update mechanism
-    const id = setInterval(load, 2000);
-    return () => clearInterval(id);
+    const subscription = liveQuery(() => db.rules.count()).subscribe({
+      next: setCount,
+      error: (e) => console.error('useAllRuleCount', e),
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   return count;

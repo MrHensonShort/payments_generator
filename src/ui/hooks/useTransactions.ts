@@ -4,6 +4,7 @@
  * Provides a live list with polling, plus count and CRUD helpers.
  */
 import { useState, useEffect, useCallback } from 'react';
+import { liveQuery } from 'dexie';
 import { db } from '@/infrastructure/database';
 import { TransactionRepo } from '@/infrastructure/transactionRepo';
 import type { TransactionEntry } from '@/infrastructure/database';
@@ -76,10 +77,11 @@ export function useTransactionCount(): number {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    const load = () => repo.getAll().then((all) => setCount(all.length));
-    load();
-    const id = setInterval(load, 3000);
-    return () => clearInterval(id);
+    const subscription = liveQuery(() => db.transactions.count()).subscribe({
+      next: setCount,
+      error: (e) => console.error('useTransactionCount', e),
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   return count;
