@@ -1,20 +1,30 @@
-import { Badge } from '@/ui/components/badge';
-import { Button } from '@/ui/components/button';
+import { HashRouter, Routes, Route } from 'react-router-dom';
+import { AppShell } from '@/ui/layout/AppShell';
+import { ViewportGuard } from '@/ui/guards/ViewportGuard';
+import KonfigurationPage from '@/ui/pages/KonfigurationPage';
+import DauerauftraegePage from '@/ui/pages/DauerauftraegePage';
+import EpisodischePage from '@/ui/pages/EpisodischePage';
+import StreubuchungenPage from '@/ui/pages/StreubuchungenPage';
+import TransaktionenPage from '@/ui/pages/TransaktionenPage';
+import BackupExportPage from '@/ui/pages/BackupExportPage';
 
 function App() {
   return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-      <div className="text-center space-y-4">
-        <h1 className="text-3xl font-bold text-foreground">Payments Generator</h1>
-        <p className="text-muted-foreground">Aurora Dark Theme aktiv</p>
-        <div className="flex gap-2 justify-center">
-          <Badge>Standard</Badge>
-          <Badge variant="income">+€1.234,56</Badge>
-          <Badge variant="expense">-€567,89</Badge>
-        </div>
-        <Button>Los geht's</Button>
-      </div>
-    </div>
+    <ViewportGuard>
+      <HashRouter>
+        <Routes>
+          <Route element={<AppShell dbStatus="connected" ruleCount={0} transactionCount={0} />}>
+            <Route path="/" element={null} />
+            <Route path="/konfiguration" element={<KonfigurationPage />} />
+            <Route path="/dauerauftraege" element={<DauerauftraegePage />} />
+            <Route path="/episodisch" element={<EpisodischePage />} />
+            <Route path="/streubuchungen" element={<StreubuchungenPage />} />
+            <Route path="/transaktionen" element={<TransaktionenPage />} />
+            <Route path="/backup" element={<BackupExportPage />} />
+          </Route>
+        </Routes>
+      </HashRouter>
+    </ViewportGuard>
   );
 }
 
