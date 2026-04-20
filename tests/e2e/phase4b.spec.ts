@@ -342,8 +342,8 @@ test.describe('TC-10 · Recurring End-to-End (P4b-10 / CLA-62)', () => {
     await expect(page.getByTestId('transaction-table')).toContainText('TC10 Empfaenger');
     await expect(page.getByTestId('transaction-table')).toContainText('Dauerauftrag E2E Test');
 
-    // Step 8 – Source column shows "recurring".
-    await expect(rows.first()).toContainText(/recurring/i);
+    // Step 8 – Source column shows the localised label for recurring ("Dauerauftrag").
+    await expect(rows.first()).toContainText(/dauerauftrag/i);
   });
 
   test('generated transactions fall within the configured date range', async ({ page }) => {
@@ -580,10 +580,10 @@ test.describe('KPI Correctness (P4b-07 / CLA-62)', () => {
     const kpiExpenseText = await page.getByTestId('kpi-expense').innerText();
     const kpiExpense = parseKpiAmount(kpiExpenseText);
 
-    // Expected: 3 × (−150.00) = −450.00.
+    // Expected: 3 × 150.00 = 450.00 (KpiHeader zeigt Math.abs der Ausgaben).
     expect(
-      Math.abs(kpiExpense - -450.0),
-      `KPI expense: got ${kpiExpense}, expected -450.00`,
+      Math.abs(kpiExpense - 450.0),
+      `KPI expense: got ${kpiExpense}, expected 450.00`,
     ).toBeLessThan(0.01);
   });
 
@@ -656,9 +656,9 @@ test.describe('KPI Correctness (P4b-07 / CLA-62)', () => {
     const expense = parseKpiAmount(await page.getByTestId('kpi-expense').innerText());
     const balance = parseKpiAmount(await page.getByTestId('kpi-balance').innerText());
 
-    // Expected:  income=3000, expense=−1200, balance=+1800.
+    // Expected:  income=3000, expense=1200 (absolut), balance=+1800.
     expect(Math.abs(income - 3_000.0), `income: got ${income}`).toBeLessThan(0.01);
-    expect(Math.abs(expense - -1_200.0), `expense: got ${expense}`).toBeLessThan(0.01);
+    expect(Math.abs(expense - 1_200.0), `expense: got ${expense}`).toBeLessThan(0.01);
     expect(Math.abs(balance - 1_800.0), `balance: got ${balance}`).toBeLessThan(0.01);
   });
 
