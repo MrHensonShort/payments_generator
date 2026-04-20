@@ -32,7 +32,8 @@
  *   const txns = engine.generate(rule, context);
  */
 
-import { randomUUID } from 'node:crypto';
+// Web Crypto API – available in all modern browsers and Web Workers (no node:crypto)
+const randomUUID = (): string => globalThis.crypto.randomUUID();
 import { AmountCalculator } from './AmountCalculator.js';
 import { workingDayCalendar, type FederalState } from './calendar/WorkingDayCalendar.js';
 import { createRng } from './rng/seededRng.js';

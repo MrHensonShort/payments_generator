@@ -444,6 +444,7 @@ function TransaktionenPage() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [editTarget, setEditTarget] = useState<TransactionEntry | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<TransactionEntry | null>(null);
 
   // Apply client-side filters before passing to TanStack Table
   const filteredData = useMemo(() => {
@@ -548,21 +549,36 @@ function TransaktionenPage() {
       {
         id: 'actions',
         header: '',
-        size: 48,
+        size: 80,
         cell: ({ row }) => (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditTarget(row.original);
-            }}
-            data-testid="transaction-edit-btn"
-            title="Bearbeiten"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditTarget(row.original);
+              }}
+              data-testid="transaction-edit-btn"
+              title="Bearbeiten"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-destructive hover:text-destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeleteTarget(row.original);
+              }}
+              data-testid="transaction-delete-btn"
+              title="Löschen"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         ),
       },
     ],
@@ -651,99 +667,105 @@ function TransaktionenPage() {
       {/* ── Table (CLA-57 – TanStack Table v8 + Virtual v3) ─────────────── */}
       {loading ? (
         <p className="mt-4 text-sm text-muted-foreground">Lade…</p>
-      ) : transactions.length === 0 ? (
-        <div
-          className="mt-4 flex flex-col items-center justify-center rounded-lg border border-dashed py-24 text-muted-foreground"
-          data-testid="transaction-table-empty"
-        >
-          <p className="text-sm">
-            Noch keine Transaktionen. Generiere Daten in den Generator-Tabs.
-          </p>
-        </div>
       ) : (
-        <div className="flex-1 min-h-0 overflow-hidden rounded-lg border">
-          {/* Fixed table header */}
-          <div className="border-b bg-card" data-testid="tx-table-header">
-            <table className="w-full table-fixed text-sm">
-              <thead>
-                {table.getHeaderGroups().map((hg) => (
-                  <tr key={hg.id}>
-                    {hg.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        style={{ width: header.getSize() }}
-                        className="select-none px-3 py-2 text-left text-xs font-medium text-muted-foreground"
-                      >
-                        {header.isPlaceholder ? null : (
-                          <button
-                            className="flex items-center gap-1 hover:text-foreground"
-                            onClick={header.column.getToggleSortingHandler()}
+        <div
+          className="flex-1 min-h-0 overflow-hidden rounded-lg border"
+          data-testid="transaction-table"
+        >
+          {transactions.length === 0 ? (
+            <div
+              className="flex flex-col items-center justify-center py-24 text-muted-foreground"
+              data-testid="transaction-table-empty"
+            >
+              <p className="text-sm">
+                Noch keine Transaktionen. Generiere Daten in den Generator-Tabs.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Fixed table header */}
+              <div className="border-b bg-card" data-testid="tx-table-header">
+                <table className="w-full table-fixed text-sm">
+                  <thead>
+                    {table.getHeaderGroups().map((hg) => (
+                      <tr key={hg.id}>
+                        {hg.headers.map((header) => (
+                          <th
+                            key={header.id}
+                            style={{ width: header.getSize() }}
+                            className="select-none px-3 py-2 text-left text-xs font-medium text-muted-foreground"
                           >
-                            {flexRender(header.column.columnDef.header, header.getContext())}
-                            {header.column.getCanSort() &&
-                              ({
-                                asc: <ArrowUp className="h-3 w-3" />,
-                                desc: <ArrowDown className="h-3 w-3" />,
-                              }[header.column.getIsSorted() as string] ?? (
-                                <ArrowUpDown className="h-3 w-3 opacity-40" />
-                              ))}
-                          </button>
-                        )}
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-            </table>
-          </div>
-
-          {/* Virtually scrolled body */}
-          <div
-            ref={parentRef}
-            className="overflow-y-auto"
-            style={{ height: 'calc(100% - 37px)' }}
-            data-testid="transaction-table"
-          >
-            <div style={{ height: `${totalSize}px`, position: 'relative' }}>
-              <table
-                className="w-full table-fixed text-sm"
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                }}
-              >
-                <tbody>
-                  {virtualItems.map((virtualRow) => {
-                    const row = rows[virtualRow.index];
-                    return (
-                      <tr
-                        key={row.id}
-                        style={{
-                          height: `${virtualRow.size}px`,
-                          transform: `translateY(${virtualRow.start}px)`,
-                        }}
-                        className="absolute w-full border-b last:border-b-0 hover:bg-accent/50"
-                        data-testid="transaction-table-row"
-                        onClick={() => setEditTarget(row.original)}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <td
-                            key={cell.id}
-                            style={{ width: cell.column.getSize() }}
-                            className="px-3 py-1.5 text-sm"
-                          >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </td>
+                            {header.isPlaceholder ? null : (
+                              <button
+                                className="flex items-center gap-1 hover:text-foreground"
+                                onClick={header.column.getToggleSortingHandler()}
+                              >
+                                {flexRender(header.column.columnDef.header, header.getContext())}
+                                {header.column.getCanSort() &&
+                                  ({
+                                    asc: <ArrowUp className="h-3 w-3" />,
+                                    desc: <ArrowDown className="h-3 w-3" />,
+                                  }[header.column.getIsSorted() as string] ?? (
+                                    <ArrowUpDown className="h-3 w-3 opacity-40" />
+                                  ))}
+                              </button>
+                            )}
+                          </th>
                         ))}
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                    ))}
+                  </thead>
+                </table>
+              </div>
+
+              {/* Virtually scrolled body */}
+              <div
+                ref={parentRef}
+                className="overflow-y-auto"
+                style={{ height: 'calc(100% - 37px)' }}
+              >
+                <div style={{ height: `${totalSize}px`, position: 'relative' }}>
+                  <table
+                    className="w-full table-fixed text-sm"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                    }}
+                  >
+                    <tbody>
+                      {virtualItems.map((virtualRow) => {
+                        const row = rows[virtualRow.index];
+                        return (
+                          <tr
+                            key={row.id}
+                            style={{
+                              height: `${virtualRow.size}px`,
+                              transform: `translateY(${virtualRow.start}px)`,
+                            }}
+                            className="absolute w-full border-b last:border-b-0 hover:bg-accent/50"
+                            data-testid="transaction-table-row"
+                            onClick={() => setEditTarget(row.original)}
+                          >
+                            {row.getVisibleCells().map((cell) => (
+                              <td
+                                key={cell.id}
+                                style={{ width: cell.column.getSize() }}
+                                className="px-3 py-1.5 text-sm"
+                              >
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </td>
+                            ))}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -753,6 +775,23 @@ function TransaktionenPage() {
         onClose={() => setEditTarget(null)}
         onSave={updateTransaction}
         onDelete={deleteTransaction}
+      />
+
+      {/* ── Confirm delete row ───────────────────────────────────────────── */}
+      <ConfirmModal
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        title="Transaktion löschen?"
+        description="Diese Transaktion wird dauerhaft gelöscht."
+        confirmLabel="Löschen"
+        onConfirm={async () => {
+          if (deleteTarget) {
+            await deleteTransaction(deleteTarget.id);
+            setDeleteTarget(null);
+          }
+        }}
       />
 
       {/* ── Confirm clear all ────────────────────────────────────────────── */}
