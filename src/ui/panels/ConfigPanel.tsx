@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { format, parseISO, isValid, isBefore } from 'date-fns';
-import { de } from 'date-fns/locale';
-import { CalendarIcon, RefreshCw, Server } from 'lucide-react';
+import { isBefore, parseISO, isValid } from 'date-fns';
+import { RefreshCw, Server } from 'lucide-react';
 import {
   getApiKey,
   getApiUrl,
@@ -10,18 +9,10 @@ import {
   DEFAULT_API_URL,
 } from '@/infrastructure/api/apiKeyStorage';
 import { useAppConfigStore, selectConfig } from '@/ui/stores/appConfig';
+import { ConfirmModal } from '@/ui/components/confirm-modal';
 import { Button } from '@/ui/components/button';
 import { Input } from '@/ui/components/input';
 import { Label } from '@/ui/components/label';
-import { Calendar } from '@/ui/components/calendar';
-import { Popover, PopoverTrigger, PopoverContent } from '@/ui/components/popover';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/ui/components/select';
 import { cn } from '@/lib/utils';
 
 // ── Bundesland options ────────────────────────────────────────────────────────
@@ -52,10 +43,6 @@ function toDate(iso: string): Date | undefined {
   return isValid(d) ? d : undefined;
 }
 
-function toIso(d: Date): string {
-  return format(d, 'yyyy-MM-dd');
-}
-
 // ── DatePickerField ───────────────────────────────────────────────────────────
 
 interface DatePickerFieldProps {
@@ -63,48 +50,23 @@ interface DatePickerFieldProps {
   label: string;
   value: string;
   onChange: (iso: string) => void;
-  disabled?: (date: Date) => boolean;
+  min?: string;
   error?: string;
 }
 
-function DatePickerField({ id, label, value, onChange, disabled, error }: DatePickerFieldProps) {
-  const [open, setOpen] = useState(false);
-  const date = toDate(value);
-
+function DatePickerField({ id, label, value, onChange, min, error }: DatePickerFieldProps) {
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            id={id}
-            variant="outline"
-            data-testid={`config-${id}`}
-            className={cn(
-              'w-full justify-start text-left font-normal',
-              !date && 'text-muted-foreground',
-              error && 'border-destructive',
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, 'dd.MM.yyyy', { locale: de }) : 'Datum auswählen'}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={(d) => {
-              if (d) {
-                onChange(toIso(d));
-                setOpen(false);
-              }
-            }}
-            disabled={disabled}
-            initialFocus
-          />
-        </PopoverContent>
-      </Popover>
+      <Input
+        id={id}
+        type="date"
+        value={value}
+        min={min}
+        onChange={(e) => onChange(e.target.value)}
+        data-testid={`config-panel-${id}`}
+        className={cn('font-mono', error && 'border-destructive')}
+      />
       {error && (
         <p className="text-xs text-destructive" role="alert">
           {error}
@@ -133,7 +95,7 @@ function TimeField({ id, label, value, onChange, error }: TimeFieldProps) {
         type="time"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        data-testid={`config-${id}`}
+        data-testid={`config-panel-${id}`}
         className={cn('font-mono', error && 'border-destructive')}
       />
       {error && (
@@ -151,6 +113,7 @@ export function ConfigPanel() {
   const config = useAppConfigStore(selectConfig);
   const setConfig = useAppConfigStore((s) => s.setConfig);
   const resetConfig = useAppConfigStore((s) => s.resetConfig);
+  const [resetModalOpen, setResetModalOpen] = useState(false);
 
   // Validation: ZR-07 – Start < Ende
   const dateFromDate = toDate(config.dateFrom);
@@ -193,7 +156,12 @@ export function ConfigPanel() {
               Globale Parameter für die Transaktionsgenerierung
             </p>
           </div>
-          <Button variant="ghost" size="sm" onClick={resetConfig} data-testid="config-reset">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setResetModalOpen(true)}
+            data-testid="config-panel-reset-btn"
+          >
             <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
             Zurücksetzen
           </Button>
@@ -206,21 +174,18 @@ export function ConfigPanel() {
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <DatePickerField
-              id="dateFrom"
+              id="start-date"
               label="Startdatum"
               value={config.dateFrom}
               onChange={(v) => setConfig({ dateFrom: v })}
               error={dateError}
             />
             <DatePickerField
-              id="dateTo"
+              id="end-date"
               label="Enddatum"
               value={config.dateTo}
               onChange={(v) => setConfig({ dateTo: v })}
-              disabled={(d) => {
-                const from = toDate(config.dateFrom);
-                return from ? d < from : false;
-              }}
+              min={config.dateFrom}
               error={dateError ? ' ' : undefined}
             />
           </div>
@@ -238,14 +203,14 @@ export function ConfigPanel() {
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <TimeField
-              id="timeFrom"
+              id="start-time"
               label="Startzeit"
               value={config.timeFrom}
               onChange={(v) => setConfig({ timeFrom: v })}
               error={timeError}
             />
             <TimeField
-              id="timeTo"
+              id="end-time"
               label="Endzeit"
               value={config.timeTo}
               onChange={(v) => setConfig({ timeTo: v })}
@@ -269,8 +234,10 @@ export function ConfigPanel() {
               <button
                 key={mode}
                 type="button"
+                role="radio"
+                aria-checked={config.paymentMode === mode}
                 onClick={() => setConfig({ paymentMode: mode })}
-                data-testid={`config-payment-mode-${mode}`}
+                data-testid={`config-panel-payment-mode-${mode}`}
                 className={cn(
                   'flex-1 rounded-md border py-2.5 text-sm font-medium transition-colors',
                   config.paymentMode === mode
@@ -296,22 +263,23 @@ export function ConfigPanel() {
           </h3>
           <div className="space-y-1.5">
             <Label htmlFor="bundesland">Bundesland für Feiertagskalender</Label>
-            <Select value={config.bundesland} onValueChange={(v) => setConfig({ bundesland: v })}>
-              <SelectTrigger id="bundesland" data-testid="config-bundesland" className="w-full">
-                <SelectValue placeholder="Bundesland wählen" />
-              </SelectTrigger>
-              <SelectContent>
-                {BUNDESLAENDER.map((bl) => (
-                  <SelectItem
-                    key={bl.value}
-                    value={bl.value}
-                    data-testid={`config-bundesland-option-${bl.value}`}
-                  >
-                    {bl.label} ({bl.value})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select
+              id="bundesland"
+              data-testid="config-panel-bundesland"
+              value={config.bundesland}
+              onChange={(e) => setConfig({ bundesland: e.target.value })}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              {BUNDESLAENDER.map((bl) => (
+                <option
+                  key={bl.value}
+                  value={bl.value}
+                  data-testid={`config-bundesland-option-${bl.value}`}
+                >
+                  {bl.label} ({bl.value})
+                </option>
+              ))}
+            </select>
           </div>
         </section>
 
@@ -331,7 +299,7 @@ export function ConfigPanel() {
                 const v = e.target.value.trim();
                 setConfig({ seed: v === '' ? null : parseInt(v, 10) });
               }}
-              data-testid="config-seed"
+              data-testid="config-panel-seed"
               className="font-mono-nums w-48"
             />
             <p className="text-xs text-muted-foreground">
@@ -394,6 +362,18 @@ export function ConfigPanel() {
           </div>
         )}
       </div>
+
+      {/* Reset confirmation modal */}
+      <ConfirmModal
+        open={resetModalOpen}
+        onOpenChange={setResetModalOpen}
+        title="Konfiguration zurücksetzen?"
+        description="Alle Einstellungen werden auf die Standardwerte zurückgesetzt."
+        onConfirm={() => {
+          resetConfig();
+          setResetModalOpen(false);
+        }}
+      />
     </div>
   );
 }

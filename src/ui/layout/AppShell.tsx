@@ -3,11 +3,9 @@ import { Sidebar } from './Sidebar';
 
 interface AppShellProps {
   dbStatus: 'connected' | 'error' | 'initializing';
-  ruleCount?: number;
-  transactionCount?: number;
 }
 
-export function AppShell({ dbStatus, ruleCount, transactionCount }: AppShellProps) {
+export function AppShell({ dbStatus }: AppShellProps) {
   const { pathname } = useLocation();
   if (pathname === '/') {
     return <Navigate to="/konfiguration" replace />;
@@ -15,7 +13,7 @@ export function AppShell({ dbStatus, ruleCount, transactionCount }: AppShellProp
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar dbStatus={dbStatus} ruleCount={ruleCount} transactionCount={transactionCount} />
+      <Sidebar dbStatus={dbStatus} />
       <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>

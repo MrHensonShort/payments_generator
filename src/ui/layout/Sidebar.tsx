@@ -2,6 +2,8 @@ import { NavLink } from 'react-router-dom';
 import { Settings, RefreshCcw, Zap, Shuffle, BarChart3, Archive, Database } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/ui/components/separator';
+import { useAllRuleCount } from '@/ui/hooks/useRules';
+import { useTransactionCount } from '@/ui/hooks/useTransactions';
 
 interface NavItem {
   to: string;
@@ -18,11 +20,12 @@ interface NavGroup {
 
 interface SidebarProps {
   dbStatus: 'connected' | 'error' | 'initializing';
-  ruleCount?: number;
-  transactionCount?: number;
 }
 
-export function Sidebar({ dbStatus, ruleCount = 0, transactionCount = 0 }: SidebarProps) {
+export function Sidebar({ dbStatus }: SidebarProps) {
+  const ruleCount = useAllRuleCount();
+  const transactionCount = useTransactionCount();
+
   const navGroups: NavGroup[] = [
     {
       label: 'Konfiguration',

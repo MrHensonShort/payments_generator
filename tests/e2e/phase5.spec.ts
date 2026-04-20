@@ -1,5 +1,7 @@
 import * as fs from 'fs';
-import { test, expect, type Page } from '@playwright/test';
+import * as os from 'os';
+import * as path from 'path';
+import { test, expect, type Page, type Locator } from '@playwright/test';
 
 /**
  * Phase 5 E2E Tests – Export / Import
@@ -225,6 +227,24 @@ async function selectImportFile(
     mimeType: 'application/json',
     buffer,
   });
+}
+
+/**
+ * Set a large file (> Playwright's 50 MB in-memory limit) via a temp file on disk.
+ * Playwright's setInputFiles rejects buffers > 50 MB; writing to disk bypasses this.
+ */
+async function setLargeFile(input: Locator, name: string, buf: Buffer): Promise<void> {
+  const tmpPath = path.join(os.tmpdir(), `pw-${Date.now()}-${name}`);
+  fs.writeFileSync(tmpPath, buf);
+  try {
+    await input.setInputFiles(tmpPath);
+  } finally {
+    try {
+      fs.unlinkSync(tmpPath);
+    } catch {
+      /* ignore cleanup errors */
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -758,11 +778,7 @@ test.describe('Fehlerszenario > 50 MB (P5-07 / CLA-69)', () => {
     // 51 MB synthetic buffer – not valid JSON; size check happens before parsing.
     const oversizedBuffer = Buffer.alloc(51 * 1024 * 1024, 0x78); // 'x' fill
 
-    await page.getByTestId('import-file-input').setInputFiles({
-      name: 'huge-backup.json',
-      mimeType: 'application/json',
-      buffer: oversizedBuffer,
-    });
+    await setLargeFile(page.getByTestId('import-file-input'), 'huge-backup.json', oversizedBuffer);
 
     // Toast must appear (data-testid="import-error-toast", role="alert").
     await expect(page.getByTestId('import-error-toast')).toBeVisible({ timeout: 3_000 });
@@ -774,11 +790,7 @@ test.describe('Fehlerszenario > 50 MB (P5-07 / CLA-69)', () => {
     const oversizedBuffer = Buffer.alloc(51 * 1024 * 1024, 0x78);
     const startTime = Date.now();
 
-    await page.getByTestId('import-file-input').setInputFiles({
-      name: 'huge-backup.json',
-      mimeType: 'application/json',
-      buffer: oversizedBuffer,
-    });
+    await setLargeFile(page.getByTestId('import-file-input'), 'huge-backup.json', oversizedBuffer);
 
     await expect(page.getByTestId('import-error-toast')).toBeVisible({ timeout: 3_000 });
     const elapsed = Date.now() - startTime;
@@ -790,11 +802,7 @@ test.describe('Fehlerszenario > 50 MB (P5-07 / CLA-69)', () => {
   test('after a > 50 MB rejection the file input is cleared (no stale file)', async ({ page }) => {
     const oversizedBuffer = Buffer.alloc(51 * 1024 * 1024, 0x78);
 
-    await page.getByTestId('import-file-input').setInputFiles({
-      name: 'huge-backup.json',
-      mimeType: 'application/json',
-      buffer: oversizedBuffer,
-    });
+    await setLargeFile(page.getByTestId('import-file-input'), 'huge-backup.json', oversizedBuffer);
 
     await expect(page.getByTestId('import-error-toast')).toBeVisible({ timeout: 3_000 });
 
@@ -812,11 +820,7 @@ test.describe('Fehlerszenario > 50 MB (P5-07 / CLA-69)', () => {
     await goToTab(page, 'backup');
 
     const oversizedBuffer = Buffer.alloc(51 * 1024 * 1024, 0x78);
-    await page.getByTestId('import-file-input').setInputFiles({
-      name: 'huge-backup.json',
-      mimeType: 'application/json',
-      buffer: oversizedBuffer,
-    });
+    await setLargeFile(page.getByTestId('import-file-input'), 'huge-backup.json', oversizedBuffer);
 
     await expect(page.getByTestId('import-error-toast')).toBeVisible({ timeout: 3_000 });
 
@@ -827,11 +831,7 @@ test.describe('Fehlerszenario > 50 MB (P5-07 / CLA-69)', () => {
   test('page remains fully functional after a > 50 MB rejection (no crash)', async ({ page }) => {
     const oversizedBuffer = Buffer.alloc(51 * 1024 * 1024, 0x78);
 
-    await page.getByTestId('import-file-input').setInputFiles({
-      name: 'huge-backup.json',
-      mimeType: 'application/json',
-      buffer: oversizedBuffer,
-    });
+    await setLargeFile(page.getByTestId('import-file-input'), 'huge-backup.json', oversizedBuffer);
 
     await expect(page.getByTestId('import-error-toast')).toBeVisible({ timeout: 3_000 });
 
@@ -849,11 +849,11 @@ test.describe('Fehlerszenario > 50 MB (P5-07 / CLA-69)', () => {
     // 50 MB + 1 byte should be rejected.
     const justOverBuffer = Buffer.alloc(50 * 1024 * 1024 + 1, 0x78);
 
-    await page.getByTestId('import-file-input').setInputFiles({
-      name: 'just-over-limit.json',
-      mimeType: 'application/json',
-      buffer: justOverBuffer,
-    });
+    await setLargeFile(
+      page.getByTestId('import-file-input'),
+      'just-over-limit.json',
+      justOverBuffer,
+    );
 
     await expect(page.getByTestId('import-error-toast')).toBeVisible({ timeout: 3_000 });
   });
@@ -890,11 +890,7 @@ test.describe('Fehlerszenario > 50 MB (P5-07 / CLA-69)', () => {
     const uncaughtErrors: Error[] = [];
     page.on('pageerror', (err) => uncaughtErrors.push(err));
 
-    await page.getByTestId('import-file-input').setInputFiles({
-      name: 'huge-backup.json',
-      mimeType: 'application/json',
-      buffer: oversizedBuffer,
-    });
+    await setLargeFile(page.getByTestId('import-file-input'), 'huge-backup.json', oversizedBuffer);
 
     await expect(page.getByTestId('import-error-toast')).toBeVisible({ timeout: 3_000 });
 

@@ -7,41 +7,22 @@ import EpisodischePage from '@/ui/pages/EpisodischePage';
 import StreubuchungenPage from '@/ui/pages/StreubuchungenPage';
 import TransaktionenPage from '@/ui/pages/TransaktionenPage';
 import BackupExportPage from '@/ui/pages/BackupExportPage';
-import { useAllRuleCount } from '@/ui/hooks/useRules';
-import { useTransactionCount } from '@/ui/hooks/useTransactions';
-
-function AppWithCounts() {
-  const ruleCount = useAllRuleCount();
-  const transactionCount = useTransactionCount();
-
-  return (
-    <Routes>
-      <Route
-        element={
-          <AppShell
-            dbStatus="connected"
-            ruleCount={ruleCount}
-            transactionCount={transactionCount}
-          />
-        }
-      >
-        <Route path="/" element={null} />
-        <Route path="/konfiguration" element={<KonfigurationPage />} />
-        <Route path="/dauerauftraege" element={<DauerauftraegePage />} />
-        <Route path="/episodisch" element={<EpisodischePage />} />
-        <Route path="/streubuchungen" element={<StreubuchungenPage />} />
-        <Route path="/transaktionen" element={<TransaktionenPage />} />
-        <Route path="/backup" element={<BackupExportPage />} />
-      </Route>
-    </Routes>
-  );
-}
 
 function App() {
   return (
     <ViewportGuard>
       <HashRouter>
-        <AppWithCounts />
+        <Routes>
+          <Route element={<AppShell dbStatus="connected" />}>
+            <Route path="/" element={null} />
+            <Route path="/konfiguration" element={<KonfigurationPage />} />
+            <Route path="/dauerauftraege" element={<DauerauftraegePage />} />
+            <Route path="/episodisch" element={<EpisodischePage />} />
+            <Route path="/streubuchungen" element={<StreubuchungenPage />} />
+            <Route path="/transaktionen" element={<TransaktionenPage />} />
+            <Route path="/backup" element={<BackupExportPage />} />
+          </Route>
+        </Routes>
       </HashRouter>
     </ViewportGuard>
   );
