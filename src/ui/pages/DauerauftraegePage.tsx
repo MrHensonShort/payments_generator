@@ -418,12 +418,11 @@ function DauerauftraegePage() {
           </Button>
         </div>
 
-        <ProgressBar
-          visible={generating}
-          percent={progress}
-          onCancel={() => workerProxy.cancel()}
-          className="mb-4"
-        />
+        {generating && (
+          <div data-testid="recurring-progress" className="mb-4">
+            <ProgressBar visible={true} percent={progress} onCancel={() => workerProxy.cancel()} />
+          </div>
+        )}
 
         {!generating && genMsg && (
           <p className="mb-4 text-xs text-muted-foreground" data-testid="recurring-gen-result">

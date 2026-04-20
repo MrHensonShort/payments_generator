@@ -161,14 +161,14 @@ function FilterBar({
           onChange={(e) => setGlobalFilter(e.target.value)}
           placeholder="Suchen…"
           className="h-8 pl-8 text-sm"
-          data-testid="filter-text"
+          data-testid="filter-bar-text"
         />
       </div>
 
       {/* Source filter (recurring/episode/scatter/manual) */}
       <div className="w-44">
         <Select value={sourceFilter} onValueChange={setSourceFilter}>
-          <SelectTrigger className="h-8 text-sm" data-testid="filter-source">
+          <SelectTrigger className="h-8 text-sm" data-testid="filter-bar-type">
             <SelectValue placeholder="Typ" />
           </SelectTrigger>
           <SelectContent>
@@ -272,7 +272,7 @@ function EditModal({ transaction, onClose, onSave, onDelete }: EditModalProps) {
           if (!open) onClose();
         }}
       >
-        <DialogContent data-testid="edit-modal">
+        <DialogContent data-testid="transaction-edit-modal">
           <DialogHeader>
             <DialogTitle>Transaktion bearbeiten</DialogTitle>
           </DialogHeader>
@@ -317,7 +317,7 @@ function EditModal({ transaction, onClose, onSave, onDelete }: EditModalProps) {
                 step="0.01"
                 value={form.amount ?? 0}
                 onChange={(e) => patch({ amount: parseFloat(e.target.value) || 0 })}
-                data-testid="edit-amount"
+                data-testid="transaction-edit-modal-amount"
                 className="h-8 text-sm"
               />
             </div>
@@ -346,7 +346,7 @@ function EditModal({ transaction, onClose, onSave, onDelete }: EditModalProps) {
                 id="edit-purpose"
                 value={form.purpose ?? ''}
                 onChange={(e) => patch({ purpose: e.target.value })}
-                data-testid="edit-purpose"
+                data-testid="transaction-edit-modal-purpose"
                 className="h-8 text-sm"
               />
             </div>
@@ -376,10 +376,15 @@ function EditModal({ transaction, onClose, onSave, onDelete }: EditModalProps) {
               Löschen
             </Button>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={onClose} data-testid="edit-cancel">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onClose}
+                data-testid="transaction-edit-modal-cancel-btn"
+              >
                 Abbrechen
               </Button>
-              <Button size="sm" onClick={handleSave} data-testid="edit-save">
+              <Button size="sm" onClick={handleSave} data-testid="transaction-edit-modal-save-btn">
                 Speichern
               </Button>
             </div>
@@ -553,7 +558,7 @@ function TransaktionenPage() {
               e.stopPropagation();
               setEditTarget(row.original);
             }}
-            data-testid={`tx-edit-${row.original.id}`}
+            data-testid="transaction-edit-btn"
             title="Bearbeiten"
           >
             <Pencil className="h-3.5 w-3.5" />
@@ -649,7 +654,7 @@ function TransaktionenPage() {
       ) : transactions.length === 0 ? (
         <div
           className="mt-4 flex flex-col items-center justify-center rounded-lg border border-dashed py-24 text-muted-foreground"
-          data-testid="tx-empty"
+          data-testid="transaction-table-empty"
         >
           <p className="text-sm">
             Noch keine Transaktionen. Generiere Daten in den Generator-Tabs.
@@ -697,7 +702,7 @@ function TransaktionenPage() {
             ref={parentRef}
             className="overflow-y-auto"
             style={{ height: 'calc(100% - 37px)' }}
-            data-testid="tx-table-body"
+            data-testid="transaction-table"
           >
             <div style={{ height: `${totalSize}px`, position: 'relative' }}>
               <table
@@ -720,7 +725,7 @@ function TransaktionenPage() {
                           transform: `translateY(${virtualRow.start}px)`,
                         }}
                         className="absolute w-full border-b last:border-b-0 hover:bg-accent/50"
-                        data-testid={`tx-row-${row.original.id}`}
+                        data-testid="transaction-table-row"
                         onClick={() => setEditTarget(row.original)}
                       >
                         {row.getVisibleCells().map((cell) => (
