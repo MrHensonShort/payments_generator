@@ -1,0 +1,100 @@
+/* ── Google Fonts (must precede @tailwind) ──────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Aurora Dark – CSS custom properties ─────────
+   All shadcn/ui tokens are expressed in HSL channels
+   (no 'hsl()' wrapper) so Tailwind opacity modifiers work.
+   ─────────────────────────────────────────────── */
+:root,
+.dark {
+  /* Base surfaces */
+  --background: 222 38% 7%; /* #0B0F1A */
+  --foreground: 225 60% 92%; /* #E8EEFF */
+
+  /* Cards / elevated surfaces */
+  --card: 222 36% 10%; /* #131929 */
+  --card-foreground: 225 60% 92%;
+
+  /* Popover / dropdown */
+  --popover: 222 36% 10%;
+  --popover-foreground: 225 60% 92%;
+
+  /* Primary action – Indigo */
+  --primary: 222 100% 67%; /* #5B8FFF */
+  --primary-foreground: 0 0% 100%;
+
+  /* Secondary – Violet */
+  --secondary: 262 84% 66%; /* #8B5CF6 */
+  --secondary-foreground: 0 0% 100%;
+
+  /* Muted – dim elements */
+  --muted: 222 28% 14%; /* ~#1a2235 */
+  --muted-foreground: 222 22% 55%; /* #7A8AAA */
+
+  /* Accent – slightly brighter navy for hover states */
+  --accent: 222 30% 16%;
+  --accent-foreground: 225 60% 92%;
+
+  /* Destructive – Red */
+  --destructive: 0 84% 60%; /* #EF4444 */
+  --destructive-foreground: 0 0% 100%;
+
+  /* Structural */
+  --border: 220 38% 18%; /* #1E2A45 */
+  --input: 220 38% 18%;
+  --ring: 222 100% 67%; /* #5B8FFF */
+  --radius: 0.5rem;
+}
+
+/* ── Base resets ─────────────────────────────── */
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: 'Inter', system-ui, sans-serif;
+  font-feature-settings:
+    'rlig' 1,
+    'calt' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Aurora scrollbar ───────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* ── Glassmorphism utility ───────────────────── */
+@layer utilities {
+  .glass {
+    background: rgba(19, 25, 41, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border));
+  }
+  .aurora-glow {
+    box-shadow: 0 0 20px rgba(91, 143, 255, 0.12);
+  }
+  .font-mono-nums {
+    font-family: 'JetBrains Mono', monospace;
+    font-feature-settings: 'tnum';
+  }
+}

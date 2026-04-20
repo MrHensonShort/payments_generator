@@ -1,0 +1,109 @@
+// prisma/schema.prisma
+//
+// Payments Generator – Database Schema (P6-02 / CLA-71)
+//
+// Default: SQLite (development).
+//   DATABASE_URL=file:./dev.db  (set in .env or .env.local)
+//
+// PostgreSQL (production / docker-compose):
+//   Change provider below to "postgresql" and set DATABASE_URL accordingly.
+//   DATABASE_URL=postgresql://user:pass@host:5432/payments_db
+//   Also change Rule.config from String → Json for native JSON support.
+//
+// Run `npx prisma migrate dev` to apply migrations.
+// Run `npx prisma generate`     to regenerate the Prisma client.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // Switch to "postgresql" for production / docker-compose (see .env.example)
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  apiKeys   ApiKey[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+// ── API Keys ──────────────────────────────────────────────────────────────────
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// SHA-256 hash of the raw key (stored securely; raw key is never persisted)
+  keyHash     String    @unique
+  /// First 8 characters of the raw key – shown in key-listing for identification
+  keyPrefix   String
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  revokedAt   DateTime?
+  /// Points to the replacement key after rotation
+  rotatedToId String?   @unique
+  rotatedTo   ApiKey?   @relation("KeyRotation", fields: [rotatedToId], references: [id])
+  rotatedFrom ApiKey?   @relation("KeyRotation")
+
+  @@index([userId])
+  @@map("api_keys")
+}
+
+// ── Transactions ──────────────────────────────────────────────────────────────
+
+/// A generated or manually entered payment transaction.
+/// Field names and types mirror TransactionEntry in the frontend domain layer.
+model Transaction {
+  /// UUID primary key (matches frontend domain id)
+  id           String   @id
+  /// Settlement date YYYY-MM-DD
+  date         String
+  /// Settlement time HH:MM
+  time         String
+  /// Amount in EUR (positive = credit, negative = debit)
+  amount       Float
+  /// Payment reference text (Verwendungszweck)
+  purpose      String
+  /// Counterparty name
+  counterparty String
+  /// Category key (matches frontend Category type)
+  category     String
+  /// Generator that produced this transaction
+  source       String
+  /// ID of the originating rule (nullable)
+  ruleId       String?
+  createdAt    DateTime @default(now())
+
+  @@index([date])
+  @@index([category])
+  @@index([source])
+  @@index([ruleId])
+  @@map("transactions")
+}
+
+// ── Rules ─────────────────────────────────────────────────────────────────────
+
+/// A payment rule driving transaction generation.
+model Rule {
+  id        String   @id
+  type      String
+  name      String
+  /// Rule-specific configuration stored as JSON string.
+  /// SQLite does not support native JSON type; deserialise with JSON.parse() on read.
+  /// For PostgreSQL, change this to Json for native support.
+  config    String
+  /// ISO 8601 creation timestamp (preserved from frontend; may differ from createdAt)
+  createdAt String
+
+  @@index([type])
+  @@map("rules")
+}

@@ -561,7 +561,7 @@ export function getCategoriesByGroup(group: CategoryGroup): Category[] {
  * Falls back to the raw key string if somehow not found (should not happen).
  */
 export function getCategoryLabel(category: Category): string {
-  return CATEGORY_META[category].label;
+  return CATEGORY_META[category]?.label ?? category;
 }
 
 /**

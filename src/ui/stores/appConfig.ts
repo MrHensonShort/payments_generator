@@ -24,7 +24,7 @@ export interface AppConfig {
 }
 
 const DEFAULT_CONFIG: AppConfig = {
-  dateFrom: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0], // Jan 1 this year
+  dateFrom: `${new Date().getFullYear()}-01-01`, // Jan 1 this year (timezone-safe)
   dateTo: new Date().toISOString().split('T')[0], // today
   timeFrom: '00:00',
   timeTo: '23:59',

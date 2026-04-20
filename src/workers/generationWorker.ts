@@ -35,7 +35,7 @@
  *   `import { expose } from 'comlink';`
  */
 
-import { expose } from './comlinkShim.js';
+import { expose } from 'comlink';
 import { db } from '../infrastructure/database.js';
 import { RuleRepo } from '../infrastructure/ruleRepo.js';
 import { GenerationOrchestrator } from '../domain/GenerationOrchestrator.js';
