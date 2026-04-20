@@ -38,10 +38,7 @@ describe('219k-Tx Worst-Case (TR-05)', () => {
     },
   );
 
-  bench(
-    'generate 1 000 transactions (baseline)',
-    () => {
-      generateTransactions(1_000);
-    },
-  );
+  bench('generate 1 000 transactions (baseline)', () => {
+    generateTransactions(1_000);
+  });
 });

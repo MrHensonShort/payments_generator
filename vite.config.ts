@@ -1,13 +1,16 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
+import path from 'node:path';
 
 // Simple bundle-stats plugin – writes dist/bundle-stats.json after each build.
+// Uses writeBundle (post-write hook) so dist/ is guaranteed to exist.
 function bundleStatsPlugin(): Plugin {
   return {
     name: 'bundle-stats',
-    generateBundle(_options, bundle) {
+    writeBundle(options, bundle) {
+      const outDir = options.dir ?? 'dist';
       const stats: Array<{ file: string; size: number; type: string }> = [];
       for (const [fileName, chunk] of Object.entries(bundle)) {
         const size =
@@ -21,7 +24,8 @@ function bundleStatsPlugin(): Plugin {
         stats.push({ file: fileName, size, type: chunk.type });
       }
       stats.sort((a, b) => b.size - a.size);
-      writeFileSync('dist/bundle-stats.json', JSON.stringify(stats, null, 2));
+      mkdirSync(outDir, { recursive: true });
+      writeFileSync(path.join(outDir, 'bundle-stats.json'), JSON.stringify(stats, null, 2));
     },
   };
 }

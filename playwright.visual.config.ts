@@ -30,10 +30,7 @@ export default defineConfig({
   /* No retries: visual diffs should fail cleanly, not be silenced */
   retries: 0,
 
-  reporter: [
-    ['list'],
-    ['html', { outputFolder: 'playwright-visual-report', open: 'never' }],
-  ],
+  reporter: [['list'], ['html', { outputFolder: 'playwright-visual-report', open: 'never' }]],
 
   use: {
     /* Viewport matches the Aurora Dark design (meta viewport=1280) */

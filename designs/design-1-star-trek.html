@@ -1,1012 +1,1270 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=1280">
-<title>Payments Generator — Design 1: Star Trek LCARS</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --lcars-orange: #FF9900;
-    --lcars-amber: #FFCC00;
-    --lcars-blue: #9999FF;
-    --lcars-light-blue: #99CCFF;
-    --lcars-red: #CC4444;
-    --lcars-green: #66CC66;
-    --lcars-purple: #CC88FF;
-    --lcars-tan: #FFCC99;
-    --lcars-dark: #000000;
-    --lcars-panel: #111111;
-    --lcars-text: #FFFFFF;
-    --lcars-dim: #888888;
-    --font-main: 'Orbitron', 'Share Tech Mono', monospace;
-    --font-mono: 'Share Tech Mono', monospace;
-  }
-
-  body {
-    background: var(--lcars-dark);
-    color: var(--lcars-text);
-    font-family: var(--font-main);
-    min-height: 100vh;
-    overflow: hidden;
-  }
-
-  /* ── LCARS OUTER FRAME ── */
-  .lcars-frame {
-    display: flex;
-    height: 100vh;
-    width: 100vw;
-    padding: 12px;
-    gap: 0;
-  }
-
-  /* ── LEFT SIDEBAR ── */
-  .lcars-sidebar {
-    display: flex;
-    flex-direction: column;
-    width: 220px;
-    flex-shrink: 0;
-    gap: 0;
-  }
-
-  .lcars-corner-top {
-    background: var(--lcars-orange);
-    height: 80px;
-    border-radius: 40px 0 0 0;
-    display: flex;
-    align-items: flex-end;
-    padding-bottom: 8px;
-    padding-left: 16px;
-  }
-
-  .lcars-corner-top span {
-    font-size: 10px;
-    font-family: var(--font-mono);
-    color: var(--lcars-dark);
-    font-weight: bold;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-
-  .lcars-elbow {
-    display: flex;
-    flex-direction: row;
-    height: 36px;
-    flex-shrink: 0;
-  }
-
-  .lcars-elbow-color {
-    width: 120px;
-    background: var(--lcars-orange);
-  }
-
-  .lcars-elbow-gap {
-    flex: 1;
-    background: var(--lcars-dark);
-  }
-
-  .lcars-nav-pills {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 10px 0;
-    flex: 1;
-  }
-
-  .nav-pill {
-    display: flex;
-    height: 40px;
-    align-items: center;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .nav-pill-bar {
-    height: 100%;
-    background: var(--lcars-blue);
-    border-radius: 20px 0 0 20px;
-    display: flex;
-    align-items: center;
-    padding-left: 14px;
-    padding-right: 10px;
-    font-size: 9px;
-    font-family: var(--font-mono);
-    letter-spacing: 2px;
-    color: var(--lcars-dark);
-    font-weight: bold;
-    text-transform: uppercase;
-    white-space: nowrap;
-    flex: 1;
-    transition: all 0.15s;
-  }
-
-  .nav-pill.active .nav-pill-bar {
-    background: var(--lcars-amber);
-  }
-
-  .nav-pill:hover .nav-pill-bar {
-    background: var(--lcars-light-blue);
-  }
-
-  .nav-pill.p1 .nav-pill-bar { background: var(--lcars-tan); }
-  .nav-pill.p2 .nav-pill-bar { background: var(--lcars-blue); }
-  .nav-pill.p3 .nav-pill-bar { background: var(--lcars-purple); }
-  .nav-pill.p4 .nav-pill-bar { background: var(--lcars-light-blue); }
-  .nav-pill.p5 .nav-pill-bar { background: var(--lcars-amber); }
-  .nav-pill.p6 .nav-pill-bar { background: var(--lcars-orange); }
-
-  .nav-pill.active .nav-pill-bar { filter: brightness(1.3); box-shadow: 0 0 12px currentColor; }
-
-  .lcars-bottom-blocks {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-top: 8px;
-  }
-
-  .bottom-block {
-    height: 28px;
-    border-radius: 14px 0 0 14px;
-    display: flex;
-    align-items: center;
-    padding: 0 12px;
-    font-family: var(--font-mono);
-    font-size: 9px;
-    color: var(--lcars-dark);
-    font-weight: bold;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-
-  .bb1 { background: var(--lcars-red); width: 80%; }
-  .bb2 { background: var(--lcars-green); width: 65%; }
-  .bb3 { background: var(--lcars-amber); width: 90%; }
-
-  .lcars-corner-bottom {
-    background: var(--lcars-orange);
-    height: 60px;
-    border-radius: 0 0 0 30px;
-    margin-top: 6px;
-    display: flex;
-    align-items: flex-start;
-    padding-top: 6px;
-    padding-left: 16px;
-  }
-
-  .lcars-corner-bottom span {
-    font-size: 9px;
-    font-family: var(--font-mono);
-    color: var(--lcars-dark);
-    letter-spacing: 2px;
-  }
-
-  /* ── VERTICAL DIVIDER ── */
-  .lcars-divider {
-    width: 12px;
-    display: flex;
-    flex-direction: column;
-    background: var(--lcars-dark);
-  }
-
-  .lcars-divider-bar {
-    background: var(--lcars-orange);
-    width: 8px;
-    margin: 0 auto;
-    flex: 1;
-    margin-top: 80px;
-    margin-bottom: 60px;
-  }
-
-  /* ── MAIN CONTENT AREA ── */
-  .lcars-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  /* ── TOP HEADER BAR ── */
-  .lcars-header {
-    height: 80px;
-    display: flex;
-    align-items: stretch;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-
-  .header-title-block {
-    background: var(--lcars-orange);
-    border-radius: 0 40px 0 0;
-    flex: 1;
-    display: flex;
-    align-items: center;
-    padding: 0 24px 0 16px;
-    gap: 20px;
-  }
-
-  .header-title {
-    font-size: 22px;
-    font-family: var(--font-main);
-    font-weight: 900;
-    color: var(--lcars-dark);
-    letter-spacing: 4px;
-    text-transform: uppercase;
-  }
-
-  .header-subtitle {
-    font-size: 10px;
-    color: var(--lcars-dark);
-    font-family: var(--font-mono);
-    letter-spacing: 3px;
-    opacity: 0.7;
-    text-transform: uppercase;
-  }
-
-  .header-blocks {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-  }
-
-  .header-block {
-    height: 60px;
-    padding: 0 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-
-  .hb-blue { background: var(--lcars-blue); }
-  .hb-amber { background: var(--lcars-amber); }
-  .hb-purple { background: var(--lcars-purple); }
-
-  .header-block .hb-val {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--lcars-dark);
-    font-family: var(--font-main);
-  }
-
-  .header-block .hb-label {
-    font-size: 8px;
-    color: var(--lcars-dark);
-    font-family: var(--font-mono);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    opacity: 0.8;
-  }
-
-  .kpi-income { color: #003300 !important; }
-  .kpi-expense { color: #330000 !important; }
-
-  /* ── HEADER ELBOW ── */
-  .header-elbow {
-    height: 36px;
-    background: var(--lcars-dark);
-    display: flex;
-    flex-shrink: 0;
-    margin-top: 4px;
-  }
-
-  .header-elbow-bar {
-    background: var(--lcars-orange);
-    height: 100%;
-    flex: 1;
-    margin-right: 16px;
-  }
-
-  /* ── CONTENT BODY ── */
-  .lcars-body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 10px 0 10px 0;
-    overflow: hidden;
-  }
-
-  /* ── FILTER BAR ── */
-  .filter-bar {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    padding: 0 4px;
-    flex-shrink: 0;
-  }
-
-  .lcars-input {
-    background: #0A0A0A;
-    border: 2px solid var(--lcars-blue);
-    border-radius: 4px;
-    color: var(--lcars-light-blue);
-    font-family: var(--font-mono);
-    font-size: 13px;
-    padding: 6px 12px;
-    outline: none;
-    letter-spacing: 1px;
-    height: 34px;
-  }
-
-  .lcars-input:focus {
-    border-color: var(--lcars-amber);
-    box-shadow: 0 0 8px var(--lcars-amber);
-  }
-
-  .lcars-input::placeholder { color: #444; }
-
-  .lcars-select {
-    background: #0A0A0A;
-    border: 2px solid var(--lcars-purple);
-    border-radius: 4px;
-    color: var(--lcars-purple);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    padding: 6px 10px;
-    height: 34px;
-    outline: none;
-  }
-
-  .lcars-btn {
-    background: var(--lcars-orange);
-    color: var(--lcars-dark);
-    border: none;
-    border-radius: 17px;
-    padding: 0 20px;
-    height: 34px;
-    font-family: var(--font-main);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-
-  .lcars-btn:hover { background: var(--lcars-amber); box-shadow: 0 0 10px var(--lcars-amber); }
-  .lcars-btn.secondary { background: var(--lcars-blue); }
-  .lcars-btn.secondary:hover { background: var(--lcars-light-blue); }
-  .lcars-btn.danger { background: var(--lcars-red); color: #fff; }
-
-  .filter-sep {
-    width: 1px;
-    height: 28px;
-    background: #333;
-  }
-
-  .filter-label {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--lcars-dim);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  /* ── TRANSACTION TABLE ── */
-  .table-container {
-    flex: 1;
-    overflow: auto;
-    border: 1px solid #222;
-    border-radius: 4px;
-    background: #050505;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: var(--font-mono);
-  }
-
-  thead {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-
-  th {
-    background: #0D0D0D;
-    border-bottom: 2px solid var(--lcars-orange);
-    padding: 8px 12px;
-    font-size: 9px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--lcars-orange);
-    font-family: var(--font-mono);
-    text-align: left;
-    white-space: nowrap;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  th:hover { color: var(--lcars-amber); }
-
-  th.sorted { color: var(--lcars-amber); }
-  th.sorted::after { content: ' ▲'; font-size: 8px; }
-
-  tbody tr {
-    border-bottom: 1px solid #1A1A1A;
-    transition: background 0.1s;
-  }
-
-  tbody tr:hover { background: #0F1520; }
-  tbody tr.selected { background: #0A1520; border-left: 3px solid var(--lcars-light-blue); }
-
-  td {
-    padding: 7px 12px;
-    font-size: 12px;
-    color: #CCCCCC;
-    vertical-align: middle;
-  }
-
-  td.date { color: var(--lcars-light-blue); font-size: 11px; }
-  td.amount-pos { color: var(--lcars-green); font-weight: bold; }
-  td.amount-neg { color: var(--lcars-red); font-weight: bold; }
-
-  .category-badge {
-    display: inline-block;
-    background: #111830;
-    border: 1px solid var(--lcars-blue);
-    color: var(--lcars-blue);
-    border-radius: 3px;
-    padding: 2px 7px;
-    font-size: 9px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-
-  .source-badge {
-    display: inline-block;
-    padding: 2px 7px;
-    border-radius: 3px;
-    font-size: 9px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-
-  .src-recurring { background: #1A0A30; border: 1px solid var(--lcars-purple); color: var(--lcars-purple); }
-  .src-scatter   { background: #1A1A00; border: 1px solid var(--lcars-amber);  color: var(--lcars-amber); }
-  .src-episode   { background: #001A1A; border: 1px solid var(--lcars-light-blue); color: var(--lcars-light-blue); }
-  .src-manual    { background: #1A0000; border: 1px solid var(--lcars-red); color: var(--lcars-red); }
-
-  .action-btn {
-    background: transparent;
-    border: 1px solid #333;
-    border-radius: 3px;
-    color: #666;
-    cursor: pointer;
-    padding: 2px 8px;
-    font-size: 11px;
-    transition: all 0.15s;
-  }
-
-  .action-btn:hover { border-color: var(--lcars-orange); color: var(--lcars-orange); }
-
-  /* ── BOTTOM STATUS BAR ── */
-  .lcars-status {
-    height: 40px;
-    background: #0A0A0A;
-    border-top: 2px solid var(--lcars-orange);
-    display: flex;
-    align-items: center;
-    padding: 0 16px;
-    gap: 24px;
-    flex-shrink: 0;
-  }
-
-  .status-segment {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--lcars-green);
-    box-shadow: 0 0 6px var(--lcars-green);
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
-  .status-text {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--lcars-dim);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-
-  .status-text strong {
-    color: var(--lcars-light-blue);
-  }
-
-  .lcars-progress {
-    flex: 1;
-    height: 8px;
-    background: #1A1A1A;
-    border-radius: 4px;
-    overflow: hidden;
-    max-width: 200px;
-    margin-left: auto;
-  }
-
-  .lcars-progress-bar {
-    height: 100%;
-    width: 72%;
-    background: linear-gradient(90deg, var(--lcars-blue), var(--lcars-amber));
-    border-radius: 4px;
-  }
-
-  /* ── RIGHT INFO PANEL ── */
-  .lcars-info-panel {
-    width: 220px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    margin-left: 12px;
-  }
-
-  .info-corner-top {
-    background: var(--lcars-amber);
-    height: 80px;
-    border-radius: 0 40px 0 0;
-    display: flex;
-    align-items: flex-end;
-    padding-bottom: 8px;
-    padding-right: 16px;
-    justify-content: flex-end;
-  }
-
-  .info-corner-top span {
-    font-size: 10px;
-    font-family: var(--font-mono);
-    color: var(--lcars-dark);
-    font-weight: bold;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-
-  .info-elbow {
-    display: flex;
-    height: 36px;
-    flex-shrink: 0;
-  }
-
-  .info-elbow-color {
-    background: var(--lcars-amber);
-    flex: 1;
-    margin-left: 60px;
-  }
-
-  .info-blocks {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px 0;
-    flex: 1;
-  }
-
-  .info-block {
-    background: #0A0A0A;
-    border: 1px solid #222;
-    border-left: 4px solid var(--lcars-blue);
-    padding: 8px 10px;
-    border-radius: 0 4px 4px 0;
-  }
-
-  .info-block.b2 { border-left-color: var(--lcars-amber); }
-  .info-block.b3 { border-left-color: var(--lcars-purple); }
-  .info-block.b4 { border-left-color: var(--lcars-green); }
-
-  .info-block-title {
-    font-size: 8px;
-    font-family: var(--font-mono);
-    color: var(--lcars-dim);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-
-  .info-block-value {
-    font-size: 20px;
-    font-family: var(--font-main);
-    font-weight: 700;
-    color: var(--lcars-light-blue);
-  }
-
-  .info-block.b2 .info-block-value { color: var(--lcars-amber); }
-  .info-block.b3 .info-block-value { color: var(--lcars-purple); }
-  .info-block.b4 .info-block-value { color: var(--lcars-green); }
-
-  .info-sub {
-    font-size: 10px;
-    color: #555;
-    font-family: var(--font-mono);
-    margin-top: 2px;
-  }
-
-  .lcars-mini-chart {
-    background: #050505;
-    border: 1px solid #222;
-    border-radius: 4px;
-    height: 80px;
-    display: flex;
-    align-items: flex-end;
-    padding: 8px;
-    gap: 3px;
-    overflow: hidden;
-  }
-
-  .bar {
-    flex: 1;
-    border-radius: 2px 2px 0 0;
-    min-height: 4px;
-    transition: height 0.3s;
-  }
-
-  .bar.pos { background: var(--lcars-green); opacity: 0.7; }
-  .bar.neg { background: var(--lcars-red); opacity: 0.7; }
-
-  .info-corner-bottom {
-    background: var(--lcars-amber);
-    height: 60px;
-    border-radius: 0 0 30px 0;
-    margin-top: 6px;
-    display: flex;
-    align-items: flex-start;
-    padding-top: 6px;
-    padding-right: 16px;
-    justify-content: flex-end;
-  }
-
-  .info-corner-bottom span {
-    font-size: 9px;
-    font-family: var(--font-mono);
-    color: var(--lcars-dark);
-    letter-spacing: 2px;
-  }
-
-  /* scrollbar */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: #0A0A0A; }
-  ::-webkit-scrollbar-thumb { background: var(--lcars-blue); border-radius: 3px; }
-</style>
-</head>
-<body>
-
-<div class="lcars-frame">
-
-  <!-- LEFT SIDEBAR -->
-  <div class="lcars-sidebar">
-    <div class="lcars-corner-top"><span>SYS-7741</span></div>
-    <div class="lcars-elbow">
-      <div class="lcars-elbow-color"></div>
-      <div class="lcars-elbow-gap"></div>
-    </div>
-
-    <div class="lcars-nav-pills">
-      <div class="nav-pill p1">
-        <div class="nav-pill-bar">Konfiguration</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1280" />
+    <title>Payments Generator — Design 1: Star Trek LCARS</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --lcars-orange: #ff9900;
+        --lcars-amber: #ffcc00;
+        --lcars-blue: #9999ff;
+        --lcars-light-blue: #99ccff;
+        --lcars-red: #cc4444;
+        --lcars-green: #66cc66;
+        --lcars-purple: #cc88ff;
+        --lcars-tan: #ffcc99;
+        --lcars-dark: #000000;
+        --lcars-panel: #111111;
+        --lcars-text: #ffffff;
+        --lcars-dim: #888888;
+        --font-main: 'Orbitron', 'Share Tech Mono', monospace;
+        --font-mono: 'Share Tech Mono', monospace;
+      }
+
+      body {
+        background: var(--lcars-dark);
+        color: var(--lcars-text);
+        font-family: var(--font-main);
+        min-height: 100vh;
+        overflow: hidden;
+      }
+
+      /* ── LCARS OUTER FRAME ── */
+      .lcars-frame {
+        display: flex;
+        height: 100vh;
+        width: 100vw;
+        padding: 12px;
+        gap: 0;
+      }
+
+      /* ── LEFT SIDEBAR ── */
+      .lcars-sidebar {
+        display: flex;
+        flex-direction: column;
+        width: 220px;
+        flex-shrink: 0;
+        gap: 0;
+      }
+
+      .lcars-corner-top {
+        background: var(--lcars-orange);
+        height: 80px;
+        border-radius: 40px 0 0 0;
+        display: flex;
+        align-items: flex-end;
+        padding-bottom: 8px;
+        padding-left: 16px;
+      }
+
+      .lcars-corner-top span {
+        font-size: 10px;
+        font-family: var(--font-mono);
+        color: var(--lcars-dark);
+        font-weight: bold;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+
+      .lcars-elbow {
+        display: flex;
+        flex-direction: row;
+        height: 36px;
+        flex-shrink: 0;
+      }
+
+      .lcars-elbow-color {
+        width: 120px;
+        background: var(--lcars-orange);
+      }
+
+      .lcars-elbow-gap {
+        flex: 1;
+        background: var(--lcars-dark);
+      }
+
+      .lcars-nav-pills {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 10px 0;
+        flex: 1;
+      }
+
+      .nav-pill {
+        display: flex;
+        height: 40px;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .nav-pill-bar {
+        height: 100%;
+        background: var(--lcars-blue);
+        border-radius: 20px 0 0 20px;
+        display: flex;
+        align-items: center;
+        padding-left: 14px;
+        padding-right: 10px;
+        font-size: 9px;
+        font-family: var(--font-mono);
+        letter-spacing: 2px;
+        color: var(--lcars-dark);
+        font-weight: bold;
+        text-transform: uppercase;
+        white-space: nowrap;
+        flex: 1;
+        transition: all 0.15s;
+      }
+
+      .nav-pill.active .nav-pill-bar {
+        background: var(--lcars-amber);
+      }
+
+      .nav-pill:hover .nav-pill-bar {
+        background: var(--lcars-light-blue);
+      }
+
+      .nav-pill.p1 .nav-pill-bar {
+        background: var(--lcars-tan);
+      }
+      .nav-pill.p2 .nav-pill-bar {
+        background: var(--lcars-blue);
+      }
+      .nav-pill.p3 .nav-pill-bar {
+        background: var(--lcars-purple);
+      }
+      .nav-pill.p4 .nav-pill-bar {
+        background: var(--lcars-light-blue);
+      }
+      .nav-pill.p5 .nav-pill-bar {
+        background: var(--lcars-amber);
+      }
+      .nav-pill.p6 .nav-pill-bar {
+        background: var(--lcars-orange);
+      }
+
+      .nav-pill.active .nav-pill-bar {
+        filter: brightness(1.3);
+        box-shadow: 0 0 12px currentColor;
+      }
+
+      .lcars-bottom-blocks {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-top: 8px;
+      }
+
+      .bottom-block {
+        height: 28px;
+        border-radius: 14px 0 0 14px;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        font-family: var(--font-mono);
+        font-size: 9px;
+        color: var(--lcars-dark);
+        font-weight: bold;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+
+      .bb1 {
+        background: var(--lcars-red);
+        width: 80%;
+      }
+      .bb2 {
+        background: var(--lcars-green);
+        width: 65%;
+      }
+      .bb3 {
+        background: var(--lcars-amber);
+        width: 90%;
+      }
+
+      .lcars-corner-bottom {
+        background: var(--lcars-orange);
+        height: 60px;
+        border-radius: 0 0 0 30px;
+        margin-top: 6px;
+        display: flex;
+        align-items: flex-start;
+        padding-top: 6px;
+        padding-left: 16px;
+      }
+
+      .lcars-corner-bottom span {
+        font-size: 9px;
+        font-family: var(--font-mono);
+        color: var(--lcars-dark);
+        letter-spacing: 2px;
+      }
+
+      /* ── VERTICAL DIVIDER ── */
+      .lcars-divider {
+        width: 12px;
+        display: flex;
+        flex-direction: column;
+        background: var(--lcars-dark);
+      }
+
+      .lcars-divider-bar {
+        background: var(--lcars-orange);
+        width: 8px;
+        margin: 0 auto;
+        flex: 1;
+        margin-top: 80px;
+        margin-bottom: 60px;
+      }
+
+      /* ── MAIN CONTENT AREA ── */
+      .lcars-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      /* ── TOP HEADER BAR ── */
+      .lcars-header {
+        height: 80px;
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+
+      .header-title-block {
+        background: var(--lcars-orange);
+        border-radius: 0 40px 0 0;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        padding: 0 24px 0 16px;
+        gap: 20px;
+      }
+
+      .header-title {
+        font-size: 22px;
+        font-family: var(--font-main);
+        font-weight: 900;
+        color: var(--lcars-dark);
+        letter-spacing: 4px;
+        text-transform: uppercase;
+      }
+
+      .header-subtitle {
+        font-size: 10px;
+        color: var(--lcars-dark);
+        font-family: var(--font-mono);
+        letter-spacing: 3px;
+        opacity: 0.7;
+        text-transform: uppercase;
+      }
+
+      .header-blocks {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .header-block {
+        height: 60px;
+        padding: 0 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      .hb-blue {
+        background: var(--lcars-blue);
+      }
+      .hb-amber {
+        background: var(--lcars-amber);
+      }
+      .hb-purple {
+        background: var(--lcars-purple);
+      }
+
+      .header-block .hb-val {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--lcars-dark);
+        font-family: var(--font-main);
+      }
+
+      .header-block .hb-label {
+        font-size: 8px;
+        color: var(--lcars-dark);
+        font-family: var(--font-mono);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        opacity: 0.8;
+      }
+
+      .kpi-income {
+        color: #003300 !important;
+      }
+      .kpi-expense {
+        color: #330000 !important;
+      }
+
+      /* ── HEADER ELBOW ── */
+      .header-elbow {
+        height: 36px;
+        background: var(--lcars-dark);
+        display: flex;
+        flex-shrink: 0;
+        margin-top: 4px;
+      }
+
+      .header-elbow-bar {
+        background: var(--lcars-orange);
+        height: 100%;
+        flex: 1;
+        margin-right: 16px;
+      }
+
+      /* ── CONTENT BODY ── */
+      .lcars-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px 0 10px 0;
+        overflow: hidden;
+      }
+
+      /* ── FILTER BAR ── */
+      .filter-bar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 0 4px;
+        flex-shrink: 0;
+      }
+
+      .lcars-input {
+        background: #0a0a0a;
+        border: 2px solid var(--lcars-blue);
+        border-radius: 4px;
+        color: var(--lcars-light-blue);
+        font-family: var(--font-mono);
+        font-size: 13px;
+        padding: 6px 12px;
+        outline: none;
+        letter-spacing: 1px;
+        height: 34px;
+      }
+
+      .lcars-input:focus {
+        border-color: var(--lcars-amber);
+        box-shadow: 0 0 8px var(--lcars-amber);
+      }
+
+      .lcars-input::placeholder {
+        color: #444;
+      }
+
+      .lcars-select {
+        background: #0a0a0a;
+        border: 2px solid var(--lcars-purple);
+        border-radius: 4px;
+        color: var(--lcars-purple);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        padding: 6px 10px;
+        height: 34px;
+        outline: none;
+      }
+
+      .lcars-btn {
+        background: var(--lcars-orange);
+        color: var(--lcars-dark);
+        border: none;
+        border-radius: 17px;
+        padding: 0 20px;
+        height: 34px;
+        font-family: var(--font-main);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+
+      .lcars-btn:hover {
+        background: var(--lcars-amber);
+        box-shadow: 0 0 10px var(--lcars-amber);
+      }
+      .lcars-btn.secondary {
+        background: var(--lcars-blue);
+      }
+      .lcars-btn.secondary:hover {
+        background: var(--lcars-light-blue);
+      }
+      .lcars-btn.danger {
+        background: var(--lcars-red);
+        color: #fff;
+      }
+
+      .filter-sep {
+        width: 1px;
+        height: 28px;
+        background: #333;
+      }
+
+      .filter-label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--lcars-dim);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      /* ── TRANSACTION TABLE ── */
+      .table-container {
+        flex: 1;
+        overflow: auto;
+        border: 1px solid #222;
+        border-radius: 4px;
+        background: #050505;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: var(--font-mono);
+      }
+
+      thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      th {
+        background: #0d0d0d;
+        border-bottom: 2px solid var(--lcars-orange);
+        padding: 8px 12px;
+        font-size: 9px;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--lcars-orange);
+        font-family: var(--font-mono);
+        text-align: left;
+        white-space: nowrap;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      th:hover {
+        color: var(--lcars-amber);
+      }
+
+      th.sorted {
+        color: var(--lcars-amber);
+      }
+      th.sorted::after {
+        content: ' ▲';
+        font-size: 8px;
+      }
+
+      tbody tr {
+        border-bottom: 1px solid #1a1a1a;
+        transition: background 0.1s;
+      }
+
+      tbody tr:hover {
+        background: #0f1520;
+      }
+      tbody tr.selected {
+        background: #0a1520;
+        border-left: 3px solid var(--lcars-light-blue);
+      }
+
+      td {
+        padding: 7px 12px;
+        font-size: 12px;
+        color: #cccccc;
+        vertical-align: middle;
+      }
+
+      td.date {
+        color: var(--lcars-light-blue);
+        font-size: 11px;
+      }
+      td.amount-pos {
+        color: var(--lcars-green);
+        font-weight: bold;
+      }
+      td.amount-neg {
+        color: var(--lcars-red);
+        font-weight: bold;
+      }
+
+      .category-badge {
+        display: inline-block;
+        background: #111830;
+        border: 1px solid var(--lcars-blue);
+        color: var(--lcars-blue);
+        border-radius: 3px;
+        padding: 2px 7px;
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+
+      .source-badge {
+        display: inline-block;
+        padding: 2px 7px;
+        border-radius: 3px;
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+
+      .src-recurring {
+        background: #1a0a30;
+        border: 1px solid var(--lcars-purple);
+        color: var(--lcars-purple);
+      }
+      .src-scatter {
+        background: #1a1a00;
+        border: 1px solid var(--lcars-amber);
+        color: var(--lcars-amber);
+      }
+      .src-episode {
+        background: #001a1a;
+        border: 1px solid var(--lcars-light-blue);
+        color: var(--lcars-light-blue);
+      }
+      .src-manual {
+        background: #1a0000;
+        border: 1px solid var(--lcars-red);
+        color: var(--lcars-red);
+      }
+
+      .action-btn {
+        background: transparent;
+        border: 1px solid #333;
+        border-radius: 3px;
+        color: #666;
+        cursor: pointer;
+        padding: 2px 8px;
+        font-size: 11px;
+        transition: all 0.15s;
+      }
+
+      .action-btn:hover {
+        border-color: var(--lcars-orange);
+        color: var(--lcars-orange);
+      }
+
+      /* ── BOTTOM STATUS BAR ── */
+      .lcars-status {
+        height: 40px;
+        background: #0a0a0a;
+        border-top: 2px solid var(--lcars-orange);
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        gap: 24px;
+        flex-shrink: 0;
+      }
+
+      .status-segment {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--lcars-green);
+        box-shadow: 0 0 6px var(--lcars-green);
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
+      .status-text {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--lcars-dim);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+
+      .status-text strong {
+        color: var(--lcars-light-blue);
+      }
+
+      .lcars-progress {
+        flex: 1;
+        height: 8px;
+        background: #1a1a1a;
+        border-radius: 4px;
+        overflow: hidden;
+        max-width: 200px;
+        margin-left: auto;
+      }
+
+      .lcars-progress-bar {
+        height: 100%;
+        width: 72%;
+        background: linear-gradient(90deg, var(--lcars-blue), var(--lcars-amber));
+        border-radius: 4px;
+      }
+
+      /* ── RIGHT INFO PANEL ── */
+      .lcars-info-panel {
+        width: 220px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        margin-left: 12px;
+      }
+
+      .info-corner-top {
+        background: var(--lcars-amber);
+        height: 80px;
+        border-radius: 0 40px 0 0;
+        display: flex;
+        align-items: flex-end;
+        padding-bottom: 8px;
+        padding-right: 16px;
+        justify-content: flex-end;
+      }
+
+      .info-corner-top span {
+        font-size: 10px;
+        font-family: var(--font-mono);
+        color: var(--lcars-dark);
+        font-weight: bold;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+
+      .info-elbow {
+        display: flex;
+        height: 36px;
+        flex-shrink: 0;
+      }
+
+      .info-elbow-color {
+        background: var(--lcars-amber);
+        flex: 1;
+        margin-left: 60px;
+      }
+
+      .info-blocks {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px 0;
+        flex: 1;
+      }
+
+      .info-block {
+        background: #0a0a0a;
+        border: 1px solid #222;
+        border-left: 4px solid var(--lcars-blue);
+        padding: 8px 10px;
+        border-radius: 0 4px 4px 0;
+      }
+
+      .info-block.b2 {
+        border-left-color: var(--lcars-amber);
+      }
+      .info-block.b3 {
+        border-left-color: var(--lcars-purple);
+      }
+      .info-block.b4 {
+        border-left-color: var(--lcars-green);
+      }
+
+      .info-block-title {
+        font-size: 8px;
+        font-family: var(--font-mono);
+        color: var(--lcars-dim);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+
+      .info-block-value {
+        font-size: 20px;
+        font-family: var(--font-main);
+        font-weight: 700;
+        color: var(--lcars-light-blue);
+      }
+
+      .info-block.b2 .info-block-value {
+        color: var(--lcars-amber);
+      }
+      .info-block.b3 .info-block-value {
+        color: var(--lcars-purple);
+      }
+      .info-block.b4 .info-block-value {
+        color: var(--lcars-green);
+      }
+
+      .info-sub {
+        font-size: 10px;
+        color: #555;
+        font-family: var(--font-mono);
+        margin-top: 2px;
+      }
+
+      .lcars-mini-chart {
+        background: #050505;
+        border: 1px solid #222;
+        border-radius: 4px;
+        height: 80px;
+        display: flex;
+        align-items: flex-end;
+        padding: 8px;
+        gap: 3px;
+        overflow: hidden;
+      }
+
+      .bar {
+        flex: 1;
+        border-radius: 2px 2px 0 0;
+        min-height: 4px;
+        transition: height 0.3s;
+      }
+
+      .bar.pos {
+        background: var(--lcars-green);
+        opacity: 0.7;
+      }
+      .bar.neg {
+        background: var(--lcars-red);
+        opacity: 0.7;
+      }
+
+      .info-corner-bottom {
+        background: var(--lcars-amber);
+        height: 60px;
+        border-radius: 0 0 30px 0;
+        margin-top: 6px;
+        display: flex;
+        align-items: flex-start;
+        padding-top: 6px;
+        padding-right: 16px;
+        justify-content: flex-end;
+      }
+
+      .info-corner-bottom span {
+        font-size: 9px;
+        font-family: var(--font-mono);
+        color: var(--lcars-dark);
+        letter-spacing: 2px;
+      }
+
+      /* scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0a0a0a;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--lcars-blue);
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="lcars-frame">
+      <!-- LEFT SIDEBAR -->
+      <div class="lcars-sidebar">
+        <div class="lcars-corner-top"><span>SYS-7741</span></div>
+        <div class="lcars-elbow">
+          <div class="lcars-elbow-color"></div>
+          <div class="lcars-elbow-gap"></div>
+        </div>
+
+        <div class="lcars-nav-pills">
+          <div class="nav-pill p1">
+            <div class="nav-pill-bar">Konfiguration</div>
+          </div>
+          <div class="nav-pill p2">
+            <div class="nav-pill-bar">Wiederkehrend</div>
+          </div>
+          <div class="nav-pill p3">
+            <div class="nav-pill-bar">Epis./Unregelm.</div>
+          </div>
+          <div class="nav-pill p4">
+            <div class="nav-pill-bar">Streuzahlungen</div>
+          </div>
+          <div class="nav-pill p5 active">
+            <div class="nav-pill-bar">Transaktionen</div>
+          </div>
+          <div class="nav-pill p6">
+            <div class="nav-pill-bar">Export &amp; Verwalt.</div>
+          </div>
+        </div>
+
+        <div class="lcars-bottom-blocks">
+          <div class="bottom-block bb1">Alarm</div>
+          <div class="bottom-block bb2">Online</div>
+          <div class="bottom-block bb3">v1.3.0</div>
+        </div>
+
+        <div class="lcars-corner-bottom"><span>LCARS 7.4</span></div>
       </div>
-      <div class="nav-pill p2">
-        <div class="nav-pill-bar">Wiederkehrend</div>
-      </div>
-      <div class="nav-pill p3">
-        <div class="nav-pill-bar">Epis./Unregelm.</div>
-      </div>
-      <div class="nav-pill p4">
-        <div class="nav-pill-bar">Streuzahlungen</div>
-      </div>
-      <div class="nav-pill p5 active">
-        <div class="nav-pill-bar">Transaktionen</div>
-      </div>
-      <div class="nav-pill p6">
-        <div class="nav-pill-bar">Export &amp; Verwalt.</div>
-      </div>
-    </div>
 
-    <div class="lcars-bottom-blocks">
-      <div class="bottom-block bb1">Alarm</div>
-      <div class="bottom-block bb2">Online</div>
-      <div class="bottom-block bb3">v1.3.0</div>
-    </div>
+      <!-- DIVIDER -->
+      <div class="lcars-divider">
+        <div class="lcars-divider-bar"></div>
+      </div>
 
-    <div class="lcars-corner-bottom"><span>LCARS 7.4</span></div>
-  </div>
+      <!-- MAIN AREA -->
+      <div class="lcars-main">
+        <!-- HEADER -->
+        <div class="lcars-header">
+          <div class="header-title-block">
+            <div>
+              <div class="header-title">Payments Generator</div>
+              <div class="header-subtitle">Testdaten-Generator für Kontoumsätze — v1.3.0</div>
+            </div>
+          </div>
 
-  <!-- DIVIDER -->
-  <div class="lcars-divider">
-    <div class="lcars-divider-bar"></div>
-  </div>
+          <div class="header-blocks">
+            <div class="header-block hb-blue">
+              <div class="hb-val kpi-income">+28.450 €</div>
+              <div class="hb-label">Einnahmen</div>
+            </div>
+            <div class="header-block hb-amber" style="background: #cc2222">
+              <div class="hb-val" style="color: #ffe0e0">–19.280 €</div>
+              <div class="hb-label" style="color: #ffe0e0">Ausgaben</div>
+            </div>
+            <div class="header-block hb-purple">
+              <div class="hb-val kpi-income">+9.170 €</div>
+              <div class="hb-label">Saldo</div>
+            </div>
+          </div>
+        </div>
 
-  <!-- MAIN AREA -->
-  <div class="lcars-main">
+        <!-- HEADER ELBOW -->
+        <div class="header-elbow">
+          <div class="header-elbow-bar"></div>
+        </div>
 
-    <!-- HEADER -->
-    <div class="lcars-header">
-      <div class="header-title-block">
-        <div>
-          <div class="header-title">Payments Generator</div>
-          <div class="header-subtitle">Testdaten-Generator für Kontoumsätze — v1.3.0</div>
+        <!-- BODY -->
+        <div class="lcars-body">
+          <!-- FILTER BAR -->
+          <div class="filter-bar">
+            <span class="filter-label">Filter:</span>
+            <input
+              class="lcars-input"
+              style="width: 200px"
+              type="text"
+              placeholder="Suche Buchungstext…"
+              value="AMAZON"
+            />
+            <input class="lcars-input" style="width: 110px" type="date" value="2024-01-01" />
+            <span class="filter-label">—</span>
+            <input class="lcars-input" style="width: 110px" type="date" value="2024-12-31" />
+            <select class="lcars-select">
+              <option>Alle Typen</option>
+              <option>Einnahmen</option>
+              <option selected>Ausgaben</option>
+            </select>
+            <select class="lcars-select">
+              <option selected>Alle Quellen</option>
+              <option>Wiederkehrend</option>
+              <option>Streuung</option>
+            </select>
+            <div class="filter-sep"></div>
+            <button class="lcars-btn">Generieren</button>
+            <button class="lcars-btn secondary">Zurücksetzen</button>
+            <button class="lcars-btn danger" style="margin-left: auto">Alle Löschen</button>
+          </div>
+
+          <!-- TABLE -->
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th class="sorted">Datum ▲</th>
+                  <th>Uhrzeit</th>
+                  <th>Betrag</th>
+                  <th>Empfänger/Auftraggeber</th>
+                  <th>Verwendungszweck</th>
+                  <th>Kategorie</th>
+                  <th>Quelle</th>
+                  <th>Aktionen</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="selected">
+                  <td class="date">2024-11-28</td>
+                  <td><span style="color: #555; font-size: 11px">14:23:07</span></td>
+                  <td class="amount-neg">–87,45 €</td>
+                  <td>Amazon Payments EU</td>
+                  <td
+                    style="
+                      max-width: 220px;
+                      overflow: hidden;
+                      text-overflow: ellipsis;
+                      white-space: nowrap;
+                    "
+                  >
+                    AMZN Mktp DE*AB3X7Z1P Amazon.de
+                  </td>
+                  <td><span class="category-badge">Shopping</span></td>
+                  <td><span class="source-badge src-scatter">Streuung</span></td>
+                  <td>
+                    <button class="action-btn">✎</button>
+                    <button class="action-btn" style="color: #aa3333; border-color: #aa3333">
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="date">2024-11-27</td>
+                  <td><span style="color: #555; font-size: 11px">08:00:00</span></td>
+                  <td class="amount-pos">+3.450,00 €</td>
+                  <td>Musterfirma GmbH</td>
+                  <td>Gehalt November 2024 Pers.-Nr. 4711</td>
+                  <td>
+                    <span
+                      class="category-badge"
+                      style="border-color: #66cc66; color: #66cc66; background: #001a00"
+                      >Gehalt</span
+                    >
+                  </td>
+                  <td><span class="source-badge src-recurring">Wiederk.</span></td>
+                  <td>
+                    <button class="action-btn">✎</button>
+                    <button class="action-btn" style="color: #aa3333; border-color: #aa3333">
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="date">2024-11-26</td>
+                  <td><span style="color: #555; font-size: 11px">21:14:55</span></td>
+                  <td class="amount-neg">–12,99 €</td>
+                  <td>Spotify AB</td>
+                  <td>Spotify Premium Abo Dez 2024</td>
+                  <td>
+                    <span
+                      class="category-badge"
+                      style="border-color: #aa77ff; color: #aa77ff; background: #100a1a"
+                      >Streaming</span
+                    >
+                  </td>
+                  <td><span class="source-badge src-recurring">Wiederk.</span></td>
+                  <td>
+                    <button class="action-btn">✎</button>
+                    <button class="action-btn" style="color: #aa3333; border-color: #aa3333">
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="date">2024-11-25</td>
+                  <td><span style="color: #555; font-size: 11px">11:32:18</span></td>
+                  <td class="amount-neg">–54,30 €</td>
+                  <td>REWE Markt GmbH</td>
+                  <td>Einkauf REWE Filiale 0447</td>
+                  <td>
+                    <span
+                      class="category-badge"
+                      style="border-color: #ffaa44; color: #ffaa44; background: #1a0a00"
+                      >Lebensmittel</span
+                    >
+                  </td>
+                  <td><span class="source-badge src-scatter">Streuung</span></td>
+                  <td>
+                    <button class="action-btn">✎</button>
+                    <button class="action-btn" style="color: #aa3333; border-color: #aa3333">
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="date">2024-11-24</td>
+                  <td><span style="color: #555; font-size: 11px">09:05:00</span></td>
+                  <td class="amount-neg">–800,00 €</td>
+                  <td>Hausverwaltung Muster KG</td>
+                  <td>Miete Dezember 2024 Whg. 3. OG links</td>
+                  <td>
+                    <span
+                      class="category-badge"
+                      style="border-color: #99ccff; color: #99ccff; background: #000a1a"
+                      >Miete</span
+                    >
+                  </td>
+                  <td><span class="source-badge src-recurring">Wiederk.</span></td>
+                  <td>
+                    <button class="action-btn">✎</button>
+                    <button class="action-btn" style="color: #aa3333; border-color: #aa3333">
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="date">2024-11-22</td>
+                  <td><span style="color: #555; font-size: 11px">17:44:29</span></td>
+                  <td class="amount-neg">–38,90 €</td>
+                  <td>Shell Deutschland GmbH</td>
+                  <td>Tanken Shell Autobahn A3</td>
+                  <td>
+                    <span
+                      class="category-badge"
+                      style="border-color: #ff9988; color: #ff9988; background: #1a0500"
+                      >Tanken</span
+                    >
+                  </td>
+                  <td><span class="source-badge src-episode">Episode</span></td>
+                  <td>
+                    <button class="action-btn">✎</button>
+                    <button class="action-btn" style="color: #aa3333; border-color: #aa3333">
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="date">2024-11-20</td>
+                  <td><span style="color: #555; font-size: 11px">13:01:44</span></td>
+                  <td class="amount-neg">–49,99 €</td>
+                  <td>Amazon Payments EU</td>
+                  <td>AMZN Mktp DE*ZK8P21AB Amazon Prime</td>
+                  <td><span class="category-badge">Shopping</span></td>
+                  <td><span class="source-badge src-scatter">Streuung</span></td>
+                  <td>
+                    <button class="action-btn">✎</button>
+                    <button class="action-btn" style="color: #aa3333; border-color: #aa3333">
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="date">2024-11-18</td>
+                  <td><span style="color: #555; font-size: 11px">20:15:33</span></td>
+                  <td class="amount-neg">–9,99 €</td>
+                  <td>Netflix International B.V.</td>
+                  <td>Netflix Abonnement Nov 2024</td>
+                  <td>
+                    <span
+                      class="category-badge"
+                      style="border-color: #aa77ff; color: #aa77ff; background: #100a1a"
+                      >Streaming</span
+                    >
+                  </td>
+                  <td><span class="source-badge src-recurring">Wiederk.</span></td>
+                  <td>
+                    <button class="action-btn">✎</button>
+                    <button class="action-btn" style="color: #aa3333; border-color: #aa3333">
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="date">2024-11-15</td>
+                  <td><span style="color: #555; font-size: 11px">10:30:00</span></td>
+                  <td class="amount-neg">–1.240,00 €</td>
+                  <td>Finanzamt München</td>
+                  <td>Einkommensteuer Q3 2024 Steuernr. 8123</td>
+                  <td>
+                    <span
+                      class="category-badge"
+                      style="border-color: #ff6666; color: #ff6666; background: #1a0000"
+                      >Steuern</span
+                    >
+                  </td>
+                  <td><span class="source-badge src-episode">Episode</span></td>
+                  <td>
+                    <button class="action-btn">✎</button>
+                    <button class="action-btn" style="color: #aa3333; border-color: #aa3333">
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="date">2024-11-12</td>
+                  <td><span style="color: #555; font-size: 11px">07:22:11</span></td>
+                  <td class="amount-neg">–29,50 €</td>
+                  <td>Lidl Stiftung GmbH</td>
+                  <td>Einkauf LIDL Sde 04119 Leipzig</td>
+                  <td>
+                    <span
+                      class="category-badge"
+                      style="border-color: #ffaa44; color: #ffaa44; background: #1a0a00"
+                      >Lebensmittel</span
+                    >
+                  </td>
+                  <td><span class="source-badge src-scatter">Streuung</span></td>
+                  <td>
+                    <button class="action-btn">✎</button>
+                    <button class="action-btn" style="color: #aa3333; border-color: #aa3333">
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="date">2024-11-10</td>
+                  <td><span style="color: #555; font-size: 11px">18:04:57</span></td>
+                  <td class="amount-neg">–6,90 €</td>
+                  <td>DB Vertrieb GmbH</td>
+                  <td>Fahrkarte ICE München-Frankfurt 12.11</td>
+                  <td>
+                    <span
+                      class="category-badge"
+                      style="border-color: #77aaff; color: #77aaff; background: #000a1a"
+                      >Reise</span
+                    >
+                  </td>
+                  <td><span class="source-badge src-episode">Episode</span></td>
+                  <td>
+                    <button class="action-btn">✎</button>
+                    <button class="action-btn" style="color: #aa3333; border-color: #aa3333">
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="date">2024-11-08</td>
+                  <td><span style="color: #555; font-size: 11px">22:47:30</span></td>
+                  <td class="amount-neg">–1,29 €</td>
+                  <td>Apple Distribution Intl.</td>
+                  <td>APPLE.COM/BILL App Store Kauf</td>
+                  <td><span class="category-badge">Software</span></td>
+                  <td><span class="source-badge src-scatter">Streuung</span></td>
+                  <td>
+                    <button class="action-btn">✎</button>
+                    <button class="action-btn" style="color: #aa3333; border-color: #aa3333">
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- STATUS BAR -->
+        <div class="lcars-status">
+          <div class="status-segment">
+            <div class="status-dot"></div>
+            <span class="status-text">LCARS ONLINE</span>
+          </div>
+          <div class="status-segment">
+            <span class="status-text">Datensätze: <strong>1.284</strong></span>
+          </div>
+          <div class="status-segment">
+            <span class="status-text">Angezeigt: <strong>12 / 1.284</strong></span>
+          </div>
+          <div class="status-segment">
+            <span class="status-text">Zeitraum: <strong>01.01.2024 – 31.12.2024</strong></span>
+          </div>
+          <div class="status-segment">
+            <span class="status-text">IndexedDB: <strong>4,2 MB</strong></span>
+          </div>
+          <div class="status-segment" style="margin-left: auto">
+            <span class="status-text">Speicher</span>
+            <div class="lcars-progress"><div class="lcars-progress-bar"></div></div>
+            <span class="status-text" style="margin-left: 6px"><strong>72%</strong></span>
+          </div>
         </div>
       </div>
 
-      <div class="header-blocks">
-        <div class="header-block hb-blue">
-          <div class="hb-val kpi-income">+28.450 €</div>
-          <div class="hb-label">Einnahmen</div>
+      <!-- RIGHT INFO PANEL -->
+      <div class="lcars-info-panel">
+        <div class="info-corner-top"><span>ANALYSE</span></div>
+        <div class="info-elbow">
+          <div class="info-elbow-color"></div>
         </div>
-        <div class="header-block hb-amber" style="background: #CC2222;">
-          <div class="hb-val" style="color:#FFE0E0">–19.280 €</div>
-          <div class="hb-label" style="color:#FFE0E0">Ausgaben</div>
+
+        <div class="info-blocks">
+          <div class="info-block">
+            <div class="info-block-title">Transaktionen</div>
+            <div class="info-block-value">1.284</div>
+            <div class="info-sub">+47 seit gestern</div>
+          </div>
+          <div class="info-block b2">
+            <div class="info-block-title">Ø Betrag</div>
+            <div class="info-block-value">–43,20 €</div>
+            <div class="info-sub">Ausgaben</div>
+          </div>
+          <div class="info-block b3">
+            <div class="info-block-title">Regelsets</div>
+            <div class="info-block-value">14</div>
+            <div class="info-sub">8 aktiv</div>
+          </div>
+          <div class="info-block b4">
+            <div class="info-block-title">Generierungszeit</div>
+            <div class="info-block-value">1,3 s</div>
+            <div class="info-sub">Web Worker</div>
+          </div>
+
+          <div
+            class="info-block-title"
+            style="
+              padding: 8px 0 4px;
+              font-size: 9px;
+              letter-spacing: 2px;
+              text-transform: uppercase;
+              color: #555;
+            "
+          >
+            Monatsverlauf
+          </div>
+          <div class="lcars-mini-chart">
+            <div class="bar pos" style="height: 30%"></div>
+            <div class="bar neg" style="height: 55%"></div>
+            <div class="bar pos" style="height: 45%"></div>
+            <div class="bar neg" style="height: 70%"></div>
+            <div class="bar pos" style="height: 35%"></div>
+            <div class="bar neg" style="height: 60%"></div>
+            <div class="bar pos" style="height: 50%"></div>
+            <div class="bar neg" style="height: 40%"></div>
+            <div class="bar pos" style="height: 65%"></div>
+            <div class="bar neg" style="height: 75%"></div>
+            <div class="bar pos" style="height: 45%"></div>
+            <div class="bar neg" style="height: 80%"></div>
+          </div>
         </div>
-        <div class="header-block hb-purple">
-          <div class="hb-val kpi-income">+9.170 €</div>
-          <div class="hb-label">Saldo</div>
-        </div>
+
+        <div class="info-corner-bottom"><span>BEREIT</span></div>
       </div>
     </div>
-
-    <!-- HEADER ELBOW -->
-    <div class="header-elbow">
-      <div class="header-elbow-bar"></div>
-    </div>
-
-    <!-- BODY -->
-    <div class="lcars-body">
-
-      <!-- FILTER BAR -->
-      <div class="filter-bar">
-        <span class="filter-label">Filter:</span>
-        <input class="lcars-input" style="width: 200px;" type="text" placeholder="Suche Buchungstext…" value="AMAZON">
-        <input class="lcars-input" style="width: 110px;" type="date" value="2024-01-01">
-        <span class="filter-label">—</span>
-        <input class="lcars-input" style="width: 110px;" type="date" value="2024-12-31">
-        <select class="lcars-select">
-          <option>Alle Typen</option>
-          <option>Einnahmen</option>
-          <option selected>Ausgaben</option>
-        </select>
-        <select class="lcars-select">
-          <option selected>Alle Quellen</option>
-          <option>Wiederkehrend</option>
-          <option>Streuung</option>
-        </select>
-        <div class="filter-sep"></div>
-        <button class="lcars-btn">Generieren</button>
-        <button class="lcars-btn secondary">Zurücksetzen</button>
-        <button class="lcars-btn danger" style="margin-left: auto;">Alle Löschen</button>
-      </div>
-
-      <!-- TABLE -->
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th class="sorted">Datum ▲</th>
-              <th>Uhrzeit</th>
-              <th>Betrag</th>
-              <th>Empfänger/Auftraggeber</th>
-              <th>Verwendungszweck</th>
-              <th>Kategorie</th>
-              <th>Quelle</th>
-              <th>Aktionen</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="selected">
-              <td class="date">2024-11-28</td>
-              <td><span style="color:#555;font-size:11px">14:23:07</span></td>
-              <td class="amount-neg">–87,45 €</td>
-              <td>Amazon Payments EU</td>
-              <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AMZN Mktp DE*AB3X7Z1P Amazon.de</td>
-              <td><span class="category-badge">Shopping</span></td>
-              <td><span class="source-badge src-scatter">Streuung</span></td>
-              <td><button class="action-btn">✎</button> <button class="action-btn" style="color:#AA3333;border-color:#AA3333">✕</button></td>
-            </tr>
-            <tr>
-              <td class="date">2024-11-27</td>
-              <td><span style="color:#555;font-size:11px">08:00:00</span></td>
-              <td class="amount-pos">+3.450,00 €</td>
-              <td>Musterfirma GmbH</td>
-              <td>Gehalt November 2024 Pers.-Nr. 4711</td>
-              <td><span class="category-badge" style="border-color:#66CC66;color:#66CC66;background:#001A00">Gehalt</span></td>
-              <td><span class="source-badge src-recurring">Wiederk.</span></td>
-              <td><button class="action-btn">✎</button> <button class="action-btn" style="color:#AA3333;border-color:#AA3333">✕</button></td>
-            </tr>
-            <tr>
-              <td class="date">2024-11-26</td>
-              <td><span style="color:#555;font-size:11px">21:14:55</span></td>
-              <td class="amount-neg">–12,99 €</td>
-              <td>Spotify AB</td>
-              <td>Spotify Premium Abo Dez 2024</td>
-              <td><span class="category-badge" style="border-color:#AA77FF;color:#AA77FF;background:#100A1A">Streaming</span></td>
-              <td><span class="source-badge src-recurring">Wiederk.</span></td>
-              <td><button class="action-btn">✎</button> <button class="action-btn" style="color:#AA3333;border-color:#AA3333">✕</button></td>
-            </tr>
-            <tr>
-              <td class="date">2024-11-25</td>
-              <td><span style="color:#555;font-size:11px">11:32:18</span></td>
-              <td class="amount-neg">–54,30 €</td>
-              <td>REWE Markt GmbH</td>
-              <td>Einkauf REWE Filiale 0447</td>
-              <td><span class="category-badge" style="border-color:#FFAA44;color:#FFAA44;background:#1A0A00">Lebensmittel</span></td>
-              <td><span class="source-badge src-scatter">Streuung</span></td>
-              <td><button class="action-btn">✎</button> <button class="action-btn" style="color:#AA3333;border-color:#AA3333">✕</button></td>
-            </tr>
-            <tr>
-              <td class="date">2024-11-24</td>
-              <td><span style="color:#555;font-size:11px">09:05:00</span></td>
-              <td class="amount-neg">–800,00 €</td>
-              <td>Hausverwaltung Muster KG</td>
-              <td>Miete Dezember 2024 Whg. 3. OG links</td>
-              <td><span class="category-badge" style="border-color:#99CCFF;color:#99CCFF;background:#000A1A">Miete</span></td>
-              <td><span class="source-badge src-recurring">Wiederk.</span></td>
-              <td><button class="action-btn">✎</button> <button class="action-btn" style="color:#AA3333;border-color:#AA3333">✕</button></td>
-            </tr>
-            <tr>
-              <td class="date">2024-11-22</td>
-              <td><span style="color:#555;font-size:11px">17:44:29</span></td>
-              <td class="amount-neg">–38,90 €</td>
-              <td>Shell Deutschland GmbH</td>
-              <td>Tanken Shell Autobahn A3</td>
-              <td><span class="category-badge" style="border-color:#FF9988;color:#FF9988;background:#1A0500">Tanken</span></td>
-              <td><span class="source-badge src-episode">Episode</span></td>
-              <td><button class="action-btn">✎</button> <button class="action-btn" style="color:#AA3333;border-color:#AA3333">✕</button></td>
-            </tr>
-            <tr>
-              <td class="date">2024-11-20</td>
-              <td><span style="color:#555;font-size:11px">13:01:44</span></td>
-              <td class="amount-neg">–49,99 €</td>
-              <td>Amazon Payments EU</td>
-              <td>AMZN Mktp DE*ZK8P21AB Amazon Prime</td>
-              <td><span class="category-badge">Shopping</span></td>
-              <td><span class="source-badge src-scatter">Streuung</span></td>
-              <td><button class="action-btn">✎</button> <button class="action-btn" style="color:#AA3333;border-color:#AA3333">✕</button></td>
-            </tr>
-            <tr>
-              <td class="date">2024-11-18</td>
-              <td><span style="color:#555;font-size:11px">20:15:33</span></td>
-              <td class="amount-neg">–9,99 €</td>
-              <td>Netflix International B.V.</td>
-              <td>Netflix Abonnement Nov 2024</td>
-              <td><span class="category-badge" style="border-color:#AA77FF;color:#AA77FF;background:#100A1A">Streaming</span></td>
-              <td><span class="source-badge src-recurring">Wiederk.</span></td>
-              <td><button class="action-btn">✎</button> <button class="action-btn" style="color:#AA3333;border-color:#AA3333">✕</button></td>
-            </tr>
-            <tr>
-              <td class="date">2024-11-15</td>
-              <td><span style="color:#555;font-size:11px">10:30:00</span></td>
-              <td class="amount-neg">–1.240,00 €</td>
-              <td>Finanzamt München</td>
-              <td>Einkommensteuer Q3 2024 Steuernr. 8123</td>
-              <td><span class="category-badge" style="border-color:#FF6666;color:#FF6666;background:#1A0000">Steuern</span></td>
-              <td><span class="source-badge src-episode">Episode</span></td>
-              <td><button class="action-btn">✎</button> <button class="action-btn" style="color:#AA3333;border-color:#AA3333">✕</button></td>
-            </tr>
-            <tr>
-              <td class="date">2024-11-12</td>
-              <td><span style="color:#555;font-size:11px">07:22:11</span></td>
-              <td class="amount-neg">–29,50 €</td>
-              <td>Lidl Stiftung GmbH</td>
-              <td>Einkauf LIDL Sde 04119 Leipzig</td>
-              <td><span class="category-badge" style="border-color:#FFAA44;color:#FFAA44;background:#1A0A00">Lebensmittel</span></td>
-              <td><span class="source-badge src-scatter">Streuung</span></td>
-              <td><button class="action-btn">✎</button> <button class="action-btn" style="color:#AA3333;border-color:#AA3333">✕</button></td>
-            </tr>
-            <tr>
-              <td class="date">2024-11-10</td>
-              <td><span style="color:#555;font-size:11px">18:04:57</span></td>
-              <td class="amount-neg">–6,90 €</td>
-              <td>DB Vertrieb GmbH</td>
-              <td>Fahrkarte ICE München-Frankfurt 12.11</td>
-              <td><span class="category-badge" style="border-color:#77AAFF;color:#77AAFF;background:#000A1A">Reise</span></td>
-              <td><span class="source-badge src-episode">Episode</span></td>
-              <td><button class="action-btn">✎</button> <button class="action-btn" style="color:#AA3333;border-color:#AA3333">✕</button></td>
-            </tr>
-            <tr>
-              <td class="date">2024-11-08</td>
-              <td><span style="color:#555;font-size:11px">22:47:30</span></td>
-              <td class="amount-neg">–1,29 €</td>
-              <td>Apple Distribution Intl.</td>
-              <td>APPLE.COM/BILL App Store Kauf</td>
-              <td><span class="category-badge">Software</span></td>
-              <td><span class="source-badge src-scatter">Streuung</span></td>
-              <td><button class="action-btn">✎</button> <button class="action-btn" style="color:#AA3333;border-color:#AA3333">✕</button></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-    </div>
-
-    <!-- STATUS BAR -->
-    <div class="lcars-status">
-      <div class="status-segment">
-        <div class="status-dot"></div>
-        <span class="status-text">LCARS ONLINE</span>
-      </div>
-      <div class="status-segment">
-        <span class="status-text">Datensätze: <strong>1.284</strong></span>
-      </div>
-      <div class="status-segment">
-        <span class="status-text">Angezeigt: <strong>12 / 1.284</strong></span>
-      </div>
-      <div class="status-segment">
-        <span class="status-text">Zeitraum: <strong>01.01.2024 – 31.12.2024</strong></span>
-      </div>
-      <div class="status-segment">
-        <span class="status-text">IndexedDB: <strong>4,2 MB</strong></span>
-      </div>
-      <div class="status-segment" style="margin-left: auto;">
-        <span class="status-text">Speicher</span>
-        <div class="lcars-progress"><div class="lcars-progress-bar"></div></div>
-        <span class="status-text" style="margin-left:6px"><strong>72%</strong></span>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- RIGHT INFO PANEL -->
-  <div class="lcars-info-panel">
-    <div class="info-corner-top"><span>ANALYSE</span></div>
-    <div class="info-elbow">
-      <div class="info-elbow-color"></div>
-    </div>
-
-    <div class="info-blocks">
-      <div class="info-block">
-        <div class="info-block-title">Transaktionen</div>
-        <div class="info-block-value">1.284</div>
-        <div class="info-sub">+47 seit gestern</div>
-      </div>
-      <div class="info-block b2">
-        <div class="info-block-title">Ø Betrag</div>
-        <div class="info-block-value">–43,20 €</div>
-        <div class="info-sub">Ausgaben</div>
-      </div>
-      <div class="info-block b3">
-        <div class="info-block-title">Regelsets</div>
-        <div class="info-block-value">14</div>
-        <div class="info-sub">8 aktiv</div>
-      </div>
-      <div class="info-block b4">
-        <div class="info-block-title">Generierungszeit</div>
-        <div class="info-block-value">1,3 s</div>
-        <div class="info-sub">Web Worker</div>
-      </div>
-
-      <div class="info-block-title" style="padding:8px 0 4px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#555">Monatsverlauf</div>
-      <div class="lcars-mini-chart">
-        <div class="bar pos" style="height:30%"></div>
-        <div class="bar neg" style="height:55%"></div>
-        <div class="bar pos" style="height:45%"></div>
-        <div class="bar neg" style="height:70%"></div>
-        <div class="bar pos" style="height:35%"></div>
-        <div class="bar neg" style="height:60%"></div>
-        <div class="bar pos" style="height:50%"></div>
-        <div class="bar neg" style="height:40%"></div>
-        <div class="bar pos" style="height:65%"></div>
-        <div class="bar neg" style="height:75%"></div>
-        <div class="bar pos" style="height:45%"></div>
-        <div class="bar neg" style="height:80%"></div>
-      </div>
-    </div>
-
-    <div class="info-corner-bottom"><span>BEREIT</span></div>
-  </div>
-
-</div>
-
-</body>
+  </body>
 </html>
