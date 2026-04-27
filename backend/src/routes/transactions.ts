@@ -251,4 +251,23 @@ export async function transactionRoutes(fastify: FastifyInstance): Promise<void>
       return reply.status(204).send();
     },
   );
+
+  // ── DELETE /api/v1/transactions ─────────────────────────────────────────────
+
+  fastify.delete(
+    '/api/v1/transactions',
+    {
+      schema: {
+        tags: ['transactions'],
+        summary: 'Delete all transactions',
+        response: {
+          204: { type: 'null', description: 'All transactions deleted' },
+        },
+      },
+    },
+    async (_request, reply) => {
+      await prisma.transaction.deleteMany({});
+      return reply.status(204).send();
+    },
+  );
 }

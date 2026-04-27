@@ -36,3 +36,8 @@ export async function updateRule(
 export async function deleteRule(id: string): Promise<void> {
   await apiRequest('DELETE', `/api/v1/rules/${id}`);
 }
+
+/** Delete all rules from the backend (bulk delete). */
+export async function deleteAllRules(): Promise<void> {
+  await apiRequest('DELETE', '/api/v1/rules');
+}

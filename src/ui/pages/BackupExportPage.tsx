@@ -11,7 +11,8 @@ import {
   RefreshCw,
   Cloud,
 } from 'lucide-react';
-import { batchUploadTransactions } from '@/infrastructure/api/transactionsApi';
+import { batchUploadTransactions, deleteAllTransactions } from '@/infrastructure/api/transactionsApi';
+import { deleteAllRules } from '@/infrastructure/api/rulesApi';
 import type { ApiTransaction } from '@/infrastructure/api/types';
 import { ApiError } from '@/infrastructure/api/types';
 import { Button } from '@/ui/components/button';
@@ -511,12 +512,12 @@ function BackupExportPage() {
   // ── DB Maintenance ─────────────────────────────────────────────────────────
 
   const handleDeleteAllTransactions = useCallback(async () => {
-    await txRepo.clearAll();
+    await deleteAllTransactions();
     setConfirmDeleteTx(false);
   }, []);
 
   const handleDeleteAllRules = useCallback(async () => {
-    await ruleRepo.clearAll();
+    await deleteAllRules();
     setConfirmDeleteRules(false);
   }, []);
 

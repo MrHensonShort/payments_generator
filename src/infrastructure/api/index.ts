@@ -11,6 +11,7 @@ export {
   fetchTransactions,
   updateTransaction,
   deleteTransaction,
+  deleteAllTransactions,
   BATCH_CHUNK_SIZE,
 } from './transactionsApi';
-export { fetchRules, createRule, updateRule, deleteRule } from './rulesApi';
+export { fetchRules, createRule, updateRule, deleteRule, deleteAllRules } from './rulesApi';
