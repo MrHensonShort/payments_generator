@@ -169,4 +169,23 @@ export async function ruleRoutes(fastify: FastifyInstance): Promise<void> {
       return reply.status(204).send();
     },
   );
+
+  // ── DELETE /api/v1/rules ─────────────────────────────────────────────────────
+
+  fastify.delete(
+    '/api/v1/rules',
+    {
+      schema: {
+        tags: ['rules'],
+        summary: 'Delete all rules',
+        response: {
+          204: { type: 'null', description: 'All rules deleted' },
+        },
+      },
+    },
+    async (_request, reply) => {
+      await prisma.rule.deleteMany({});
+      return reply.status(204).send();
+    },
+  );
 }

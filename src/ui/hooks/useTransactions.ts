@@ -10,6 +10,7 @@ import {
   fetchTransactions,
   deleteTransaction as apiDeleteTransaction,
   updateTransaction as apiUpdateTransaction,
+  deleteAllTransactions as apiDeleteAllTransactions,
   getApiKey,
 } from '@/infrastructure/api';
 import type { ApiTransaction } from '@/infrastructure/api';
@@ -80,9 +81,9 @@ export function useTransactions(): UseTransactionsResult {
   );
 
   const clearAll = useCallback(async () => {
-    // No batch-delete endpoint on the backend; operation not supported.
-    console.warn('useTransactions: clearAll is not supported with backend storage');
-  }, []);
+    await apiDeleteAllTransactions();
+    reload();
+  }, [reload]);
 
   return { transactions, loading, error, reload, updateTransaction, deleteTransaction, clearAll };
 }

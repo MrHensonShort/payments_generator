@@ -77,3 +77,8 @@ export async function updateTransaction(
 export async function deleteTransaction(id: string): Promise<void> {
   await apiRequest('DELETE', `/api/v1/transactions/${id}`);
 }
+
+/** Delete all transactions from the backend (bulk delete). */
+export async function deleteAllTransactions(): Promise<void> {
+  await apiRequest('DELETE', '/api/v1/transactions');
+}

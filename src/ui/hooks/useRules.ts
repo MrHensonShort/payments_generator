@@ -106,9 +106,14 @@ export function useAllRuleCount(): number {
   useEffect(() => {
     if (!getApiKey()) return;
 
-    fetchRules()
-      .then((rules) => setCount(rules.length))
-      .catch(() => {});
+    const refresh = () =>
+      fetchRules()
+        .then((rules) => setCount(rules.length))
+        .catch(() => {});
+
+    refresh();
+    const id = setInterval(refresh, 3000);
+    return () => clearInterval(id);
   }, []);
 
   return count;
