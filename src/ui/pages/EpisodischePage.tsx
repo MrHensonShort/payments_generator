@@ -128,6 +128,8 @@ function EpisodischePage() {
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [genMsg, setGenMsg] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const patch = (partial: Partial<FormState>) => setForm((f) => ({ ...f, ...partial }));
 
@@ -158,6 +160,7 @@ function EpisodischePage() {
     setForm(DEFAULT_FORM);
     setEditingId(null);
     setErrors({});
+    setSubmitError(null);
   };
 
   const handleSubmit = async () => {
@@ -201,12 +204,20 @@ function EpisodischePage() {
       createdAt: now,
     };
 
-    if (editingId) {
-      await updateRule(editingId, entry);
-    } else {
-      await addRule(entry);
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      if (editingId) {
+        await updateRule(editingId, entry);
+      } else {
+        await addRule(entry);
+      }
+      cancelEdit();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSubmitting(false);
     }
-    cancelEdit();
   };
 
   const handleGenerate = async () => {
@@ -466,9 +477,10 @@ function EpisodischePage() {
               type="button"
               onClick={handleSubmit}
               className="flex-1"
+              disabled={submitting}
               data-testid="episode-submit"
             >
-              {editingId ? 'Speichern' : 'Hinzufügen'}
+              {submitting ? 'Speichert…' : editingId ? 'Speichern' : 'Hinzufügen'}
             </Button>
             {editingId && (
               <Button
@@ -481,6 +493,11 @@ function EpisodischePage() {
               </Button>
             )}
           </div>
+          {submitError && (
+            <p className="mt-2 text-xs text-destructive" data-testid="episode-submit-error">
+              {submitError}
+            </p>
+          )}
         </div>
       </div>
 
