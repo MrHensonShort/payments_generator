@@ -32,6 +32,18 @@ export interface GenerationConfig {
    * Defaults to "DE-BY" when omitted.
    */
   stateCode?: string;
+  /**
+   * Backend API base URL (e.g. "http://localhost:3001").
+   * When provided together with apiKey, generated transactions are uploaded
+   * to the backend instead of written to IndexedDB.
+   */
+  apiUrl?: string;
+  /**
+   * Backend API key for Bearer authentication.
+   * When provided together with apiUrl, rules are fetched from and
+   * transactions are written to the backend.
+   */
+  apiKey?: string;
 }
 
 /**

@@ -3,36 +3,14 @@
  *
  * Web Worker entry point for transaction generation (P3-04 / CLA-38).
  *
- * Exposes a `GenerationWorkerAPI` via a Comlink-compatible message protocol so
- * the main thread can call `generate()` as if it were a regular async function
+ * When apiUrl and apiKey are present in the GenerationConfig:
+ *   - Rules are fetched from GET /api/v1/rules (backend).
+ *   - Generated transactions are sent to POST /api/v1/transactions/batch (backend).
+ * Otherwise, falls back to the legacy IndexedDB path.
+ *
+ * Exposes a GenerationWorkerAPI via a Comlink-compatible message protocol so
+ * the main thread can call generate() as if it were a regular async function
  * while the computation runs off the main thread.
- *
- * ### Worker protocol messages
- * - **progress**: emitted via the `onProgress` callback after each rule.
- * - **done**:    `generate()` resolves with `GenerationResult`.
- * - **error**:   `generate()` rejects with `DOMException`:
- *   - `AbortError`         – caller aborted via `AbortSignal`.
- *   - `QuotaExceededError` – IndexedDB storage quota exceeded.
- *
- * ### Main-thread usage (after `npm install comlink`)
- * ```ts
- * import * as Comlink from 'comlink';
- * const worker = new Worker(
- *   new URL('./generationWorker', import.meta.url), { type: 'module' },
- * );
- * const api = Comlink.wrap<GenerationWorkerAPI>(worker);
- * const result = await api.generate(
- *   ruleIds, config,
- *   Comlink.proxy(onProgress),
- *   Comlink.proxy(controller.signal),
- * );
- * worker.terminate();
- * ```
- *
- * ### Comlink shim
- * Until `comlink` is installed (`npm install comlink`), the local `comlinkShim`
- * provides a compatible `expose()` implementation.  Replace with:
- *   `import { expose } from 'comlink';`
  */
 
 import { expose } from 'comlink';
@@ -54,12 +32,51 @@ export type { GenerationConfig, GenerationWorkerAPI, GenerationProgressEvent, Ge
 
 const ruleRepo = new RuleRepo(db);
 
-const orchestrator = new GenerationOrchestrator(async (entries: Transaction[]) => {
-  // Transaction and TransactionEntry share the same shape; cast is safe.
-  await db.transactions.bulkAdd(
-    entries as unknown as Parameters<typeof db.transactions.bulkAdd>[0],
-  );
-});
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Fetch all rules from the backend and return as AnyRule[], filtered by ruleIds. */
+async function fetchRulesFromBackend(
+  apiUrl: string,
+  apiKey: string,
+  ruleIds: string[],
+): Promise<AnyRule[]> {
+  const response = await fetch(`${apiUrl}/api/v1/rules`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  if (!response.ok) throw new Error(`Failed to fetch rules: HTTP ${response.status}`);
+  const data = (await response.json()) as { rules: Array<{ id: string; config: unknown }> };
+  const filtered =
+    ruleIds.length === 0 ? data.rules : data.rules.filter((r) => ruleIds.includes(r.id));
+  return filtered.map((r) => r.config as AnyRule);
+}
+
+/** POST a chunk of transactions to the backend batch endpoint. */
+async function postTransactionsToBackend(
+  apiUrl: string,
+  apiKey: string,
+  entries: Transaction[],
+): Promise<void> {
+  const transactions = entries.map((e) => ({
+    id: e.id,
+    date: e.date,
+    time: e.time,
+    amount: e.amount,
+    purpose: e.purpose,
+    counterparty: e.counterparty,
+    category: e.category,
+    source: e.source,
+    ruleId: e.ruleId ?? null,
+  }));
+  const response = await fetch(`${apiUrl}/api/v1/transactions/batch`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ transactions }),
+  });
+  if (!response.ok) throw new Error(`Failed to upload transactions: HTTP ${response.status}`);
+}
 
 // ── Worker API implementation ─────────────────────────────────────────────────
 
@@ -71,14 +88,31 @@ const workerApi: GenerationWorkerAPI = {
     signal?: AbortSignal,
   ): Promise<GenerationResult> {
     const start = Date.now();
+    const useBackend = !!(config.apiUrl && config.apiKey);
 
-    // Load the specified rules from IndexedDB.
-    const allEntries = await ruleRepo.getAll();
-    const filtered =
-      ruleIds.length === 0 ? allEntries : allEntries.filter((e) => ruleIds.includes(e.id));
+    // Load rules – from backend if API config is available, else from IndexedDB.
+    let rules: AnyRule[];
+    if (useBackend) {
+      rules = await fetchRulesFromBackend(config.apiUrl!, config.apiKey!, ruleIds);
+    } else {
+      const allEntries = await ruleRepo.getAll();
+      const filtered =
+        ruleIds.length === 0 ? allEntries : allEntries.filter((e) => ruleIds.includes(e.id));
+      rules = filtered.map((e) => e.config as AnyRule);
+    }
 
-    // Cast stored config (unknown) to AnyRule – domain layer validates.
-    const rules = filtered.map((e) => e.config as AnyRule);
+    // Build flush function – send to backend or write to IndexedDB.
+    const bulkInsert = useBackend
+      ? async (entries: Transaction[]) => {
+          await postTransactionsToBackend(config.apiUrl!, config.apiKey!, entries);
+        }
+      : async (entries: Transaction[]) => {
+          await db.transactions.bulkAdd(
+            entries as unknown as Parameters<typeof db.transactions.bulkAdd>[0],
+          );
+        };
+
+    const orchestrator = new GenerationOrchestrator(bulkInsert);
 
     // Build GenerationContext from incoming config.
     const context: GenerationContext = {

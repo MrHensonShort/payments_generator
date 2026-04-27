@@ -52,6 +52,7 @@ import type * as DBModule from '../infrastructure/database.js';
 import type * as RuleRepoModule from '../infrastructure/ruleRepo.js';
 import type * as OrchestratorModule from '../domain/GenerationOrchestrator.js';
 import type { AnyRule, GenerationContext } from '../domain/types.js';
+import { getApiKey, getApiUrl } from '../infrastructure/api/index.js';
 import type { FederalState } from '../domain/calendar/WorkingDayCalendar.js';
 
 /** Callback type for generation progress events. */
@@ -108,11 +109,17 @@ export class WorkerProxy {
     this.abortController = new AbortController();
     const { signal } = this.abortController;
 
+    // Enrich config with API credentials so the worker/fallback can reach the backend.
+    const apiKey = getApiKey();
+    const enrichedConfig: GenerationConfig = apiKey
+      ? { ...config, apiKey, apiUrl: getApiUrl() }
+      : config;
+
     try {
       if (this.isWorkerSupported()) {
-        return await this.runViaWorker(ruleIds, config, onProgress, signal);
+        return await this.runViaWorker(ruleIds, enrichedConfig, onProgress, signal);
       }
-      return await this.runFallback(ruleIds, config, onProgress, signal);
+      return await this.runFallback(ruleIds, enrichedConfig, onProgress, signal);
     } finally {
       // Always clear so `isRunning` accurately reflects the idle state.
       this.abortController = null;
@@ -237,13 +244,24 @@ export class WorkerProxy {
       import('../domain/GenerationOrchestrator.js'),
     ])) as [typeof DBModule, typeof RuleRepoModule, typeof OrchestratorModule];
 
-    // Fetch the requested rules from IndexedDB.
-    const ruleRepo = new RuleRepo(db);
-    const allEntries = await ruleRepo.getAll();
-    const filtered =
-      ruleIds.length === 0 ? allEntries : allEntries.filter((e) => ruleIds.includes(e.id));
+    const useBackend = !!(config.apiKey && config.apiUrl);
+    let rules: AnyRule[];
 
-    const rules = filtered.map((e) => e.config as AnyRule);
+    if (useBackend) {
+      // Fetch rules from the backend.
+      const { fetchRules } = await import('../infrastructure/api/rulesApi.js');
+      const apiRules = await fetchRules();
+      const filtered =
+        ruleIds.length === 0 ? apiRules : apiRules.filter((r) => ruleIds.includes(r.id));
+      rules = filtered.map((r) => r.config as unknown as AnyRule);
+    } else {
+      // Fallback: fetch rules from IndexedDB.
+      const ruleRepo = new RuleRepo(db);
+      const allEntries = await ruleRepo.getAll();
+      const filtered =
+        ruleIds.length === 0 ? allEntries : allEntries.filter((e) => ruleIds.includes(e.id));
+      rules = filtered.map((e) => e.config as AnyRule);
+    }
 
     // Convert the UI-level GenerationConfig to the domain GenerationContext.
     const context: GenerationContext = {
@@ -254,12 +272,25 @@ export class WorkerProxy {
       globalSeed: config.seed,
     };
 
-    // Run the orchestrator on the main thread with a direct DB write function.
-    const orchestrator = new GenerationOrchestrator(async (entries) => {
-      await db.transactions.bulkAdd(
-        entries as unknown as Parameters<typeof db.transactions.bulkAdd>[0],
-      );
-    });
+    // Build flush function – send to backend or write to IndexedDB.
+    const bulkInsert = useBackend
+      ? async (entries: Parameters<typeof db.transactions.bulkAdd>[0]) => {
+          const { batchUploadTransactions } =
+            await import('../infrastructure/api/transactionsApi.js');
+          const transactions = (
+            entries as unknown as import('../domain/types.js').Transaction[]
+          ).map((e) => ({ ...e, ruleId: e.ruleId ?? null }));
+          await batchUploadTransactions(
+            transactions as Parameters<typeof batchUploadTransactions>[0],
+          );
+        }
+      : async (entries: Parameters<typeof db.transactions.bulkAdd>[0]) => {
+          await db.transactions.bulkAdd(entries);
+        };
+
+    const orchestrator = new GenerationOrchestrator(
+      bulkInsert as import('../domain/GenerationOrchestrator.js').BulkInsertFn,
+    );
 
     return orchestrator.generate(rules, context, onProgress, signal);
   }

@@ -23,6 +23,7 @@ export const DEFAULT_API_URL = 'http://localhost:3001';
  * Returns an empty string if no key has been stored yet.
  */
 export function getApiKey(): string {
+  if (typeof localStorage === 'undefined') return '';
   return localStorage.getItem(STORAGE_KEY_API_KEY) ?? '';
 }
 
@@ -45,6 +46,7 @@ export function setApiKey(key: string): void {
  * Falls back to DEFAULT_API_URL when not set.
  */
 export function getApiUrl(): string {
+  if (typeof localStorage === 'undefined') return DEFAULT_API_URL;
   return localStorage.getItem(STORAGE_KEY_API_URL) ?? DEFAULT_API_URL;
 }
 
