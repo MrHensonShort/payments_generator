@@ -74,7 +74,10 @@ export function AmountConfigField({
             type="number"
             step="0.01"
             value={value.amount}
-            onChange={(e) => onChange({ mode: 'fix', amount: parseFloat(e.target.value) || 0 })}
+            onChange={(e) => {
+              const n = parseFloat(e.target.value);
+              if (!isNaN(n)) onChange({ mode: 'fix', amount: n });
+            }}
             data-testid={`${testIdPrefix}-fix-value`}
             className="h-8 text-sm"
           />
@@ -95,9 +98,10 @@ export function AmountConfigField({
               type="number"
               step="0.01"
               value={value.min}
-              onChange={(e) =>
-                onChange({ mode: 'range', min: parseFloat(e.target.value) || 0, max: value.max })
-              }
+              onChange={(e) => {
+                const n = parseFloat(e.target.value);
+                if (!isNaN(n)) onChange({ mode: 'range', min: n, max: value.max });
+              }}
               data-testid={`${testIdPrefix}-range-min`}
               className="h-8 text-sm"
             />
@@ -114,9 +118,10 @@ export function AmountConfigField({
               type="number"
               step="0.01"
               value={value.max}
-              onChange={(e) =>
-                onChange({ mode: 'range', min: value.min, max: parseFloat(e.target.value) || 0 })
-              }
+              onChange={(e) => {
+                const n = parseFloat(e.target.value);
+                if (!isNaN(n)) onChange({ mode: 'range', min: value.min, max: n });
+              }}
               data-testid={`${testIdPrefix}-range-max`}
               className="h-8 text-sm"
             />
@@ -138,13 +143,10 @@ export function AmountConfigField({
               type="number"
               step="0.01"
               value={value.base}
-              onChange={(e) =>
-                onChange({
-                  mode: 'basis',
-                  base: parseFloat(e.target.value) || 0,
-                  variance: value.variance,
-                })
-              }
+              onChange={(e) => {
+                const n = parseFloat(e.target.value);
+                if (!isNaN(n)) onChange({ mode: 'basis', base: n, variance: value.variance });
+              }}
               data-testid={`${testIdPrefix}-basis-base`}
               className="h-8 text-sm"
             />
@@ -163,13 +165,10 @@ export function AmountConfigField({
               max="100"
               step="1"
               value={value.variance}
-              onChange={(e) =>
-                onChange({
-                  mode: 'basis',
-                  base: value.base,
-                  variance: parseFloat(e.target.value) || 0,
-                })
-              }
+              onChange={(e) => {
+                const n = parseFloat(e.target.value);
+                if (!isNaN(n)) onChange({ mode: 'basis', base: value.base, variance: n });
+              }}
               data-testid={`${testIdPrefix}-basis-variance`}
               className="h-8 text-sm"
             />
